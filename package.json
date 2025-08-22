@@ -12,12 +12,15 @@
   "dependencies": {
     "@prisma/client": "^6.13.0",
     "bcrypt": "^6.0.0",
+    "exceljs": "^4.4.0",
     "jsonwebtoken": "^9.0.2",
     "next": "15.4.6",
     "next-swagger-doc": "^0.4.1",
     "nodemailer": "^7.0.5",
+    "papaparse": "^5.5.3",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

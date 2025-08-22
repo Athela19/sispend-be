@@ -57,13 +57,11 @@ const JWT_SECRET = process.env.JWT_SECRET_KEY;
 export async function POST(request) {
   try {
     const { email, otp } = await request.json();
-
-    if (!email || !otp) {
+    if (!email || !otp)
       return new Response(
         JSON.stringify({ error: "Email dan OTP dibutuhkan" }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
-    }
 
     const user = await prisma.users.findUnique({ where: { email } });
 
@@ -101,8 +99,9 @@ export async function POST(request) {
       data: { otp: null, otpExpires: null },
     });
 
+    // Buat OTP Verified token
     const otpVerifiedToken = jwt.sign(
-      { userId: user.id, email: user.email, otpVerified: true },
+      { id: user.id, email: user.email, otpVerified: true },
       JWT_SECRET,
       { expiresIn: "5m" }
     );

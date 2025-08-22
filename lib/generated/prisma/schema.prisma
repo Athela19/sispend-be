@@ -27,5 +27,77 @@ model Users {
   role       Role      @default(USER)
   otp        String?
   otpExpires DateTime?
+  histories  History[]
   createdAt  DateTime  @default(now())
+}
+
+model Personil {
+  id        Int       @id @default(autoincrement())
+  NAMA1     String?
+  NAMA2     String?
+  NAMA3     String?
+  KDPKT     String?
+  PANGKAT   String?
+  KORPS     String?
+  HAR       String?
+  NRP       String?
+  KELAHIRAN String?
+  JAB1      String?
+  JAB2      String?
+  JAB3      String?
+  JAB4      String?
+  JAB5      String?
+  TMTTNI    String?
+  TGAB      String?
+  BLAB      String?
+  THAB      String?
+  KDSAH     String?
+  TMTMPP    String?
+  TGMPP     String?
+  BLMPP     String?
+  THMPP     String?
+  SDTG      String?
+  SDBL      String?
+  SDTH      String?
+  TMTHENTI  String?
+  TGHT      String?
+  BLHT      String?
+  THHT      String?
+  KET1      String?
+  KET2      String?
+  KET3      String?
+  KET4      String?
+  KET5      String?
+  KET6      String?
+  USUL      String?
+  FLR       String?
+  NOSKEP    String?
+  TGSKEP    String?
+  KEPPRES   String?
+  TGKEPP    String?
+  A         String?
+  BL        String?
+  TH        String?
+  KDM       String?
+  KEPPANG   String?
+  TGKEPPANG String?
+  TGGAL     String?
+  BLGAL     String?
+  BLGAL1    String?
+  THGAL     String?
+  histories History[]
+  createdAt DateTime  @default(now())
+}
+
+model History {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  personilId Int? // opsional, bisa null
+  action     String
+  detail     String? // deskripsi tambahan, bisa null
+  createdAt  DateTime @default(now())
+
+  // Relasi
+  user     Users     @relation(fields: [userId], references: [id])
+  personil Personil? @relation(fields: [personilId], references: [id])
 }
