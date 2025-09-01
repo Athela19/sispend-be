@@ -37,7 +37,7 @@ model Personil {
   PANGKAT       String?
   NRP           String    @unique
   KESATUAN      String?
-  TTL           DateTime
+  TTL           String?
   TMT_TNI       String?
   NKTPA         String?
   NPWP          String?
@@ -46,24 +46,24 @@ model Personil {
   MKG           Int?
   GPT           Int?
   NO_SKEP       String?
-  TGL_SKEP      DateTime?
-  TMT_SKEP      DateTime?
+  TGL_SKEP      String?
+  TMT_SKEP      String?
   TMT_MULAI     String?
   PENSPOK       Int?
   SELAMA        String?
   PASANGAN      String?
-  TTL_PASANGAN  DateTime?
+  TTL_PASANGAN  String?
   ANAK_1        String?
-  TTL_ANAK_1    DateTime?
+  TTL_ANAK_1    String?
   STS_ANAK_1    String?
   ANAK_2        String?
-  TTL_ANAK_2    DateTime?
+  TTL_ANAK_2    String?
   STS_ANAK_2    String?
   ANAK_3        String?
-  TTL_ANAK_3    DateTime?
+  TTL_ANAK_3    String?
   STS_ANAK_3    String?
   ANAK_4        String?
-  TTL_ANAK_4    DateTime?
+  TTL_ANAK_4    String?
   STS_ANAK_4    String?
   PENSPOK_WARI  Int?
   RP1           Int?

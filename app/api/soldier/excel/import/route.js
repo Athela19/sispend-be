@@ -222,71 +222,32 @@ export async function POST(request) {
       return Number.isFinite(num) ? num : null;
     };
 
-    const normalizeDate = (val) => {
-      if (!val) return null;
-
+    // Convert any date-like input to a stored string. If Excel serial/date object, format as YYYY-MM-DD. Otherwise keep original trimmed string.
+    const normalizeDateString = (val) => {
+      if (val === undefined || val === null) return null;
       if (typeof val === "number" && val > 1 && val < 100000) {
         try {
           const epoch = new Date(1900, 0, 1);
-          const days = val - 1; // Excel counts from 1, not 0
+          const days = val - 1;
           const date = new Date(epoch.getTime() + days * 24 * 60 * 60 * 1000);
-          return isNaN(date.getTime()) ? null : date;
+          if (isNaN(date.getTime())) return null;
+          const y = date.getFullYear();
+          const m = String(date.getMonth() + 1).padStart(2, "0");
+          const d = String(date.getDate()).padStart(2, "0");
+          return `${y}-${m}-${d}`;
         } catch {
           return null;
         }
       }
-
+      if (val instanceof Date && !isNaN(val.getTime())) {
+        const y = val.getFullYear();
+        const m = String(val.getMonth() + 1).padStart(2, "0");
+        const d = String(val.getDate()).padStart(2, "0");
+        return `${y}-${m}-${d}`;
+      }
       const str = String(val).trim();
       if (!str || str.toLowerCase() === "nihil" || str === "-") return null;
-
-      // Try various date formats
-      const formats = [
-        /^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})$/,
-        /^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/,
-        /^(\d{1,2})[-\/](\d{1,2})$/,
-      ];
-
-      for (const format of formats) {
-        const match = str.match(format);
-        if (match) {
-          let day, month, year;
-
-          if (format === formats[1]) {
-            [, year, month, day] = match;
-          } else if (format === formats[2]) {
-            [, day, month] = match;
-            year = new Date().getFullYear();
-          } else {
-            [, day, month, year] = match;
-          }
-
-          day = parseInt(day, 10);
-          month = parseInt(month, 10) - 1;
-          year = parseInt(year, 10);
-
-          // Handle 2-digit years
-          if (year < 100) {
-            year = year < 50 ? 2000 + year : 1900 + year;
-          }
-
-          const date = new Date(year, month, day);
-          if (
-            !isNaN(date.getTime()) &&
-            date.getFullYear() === year &&
-            date.getMonth() === month &&
-            date.getDate() === day
-          ) {
-            return date;
-          }
-        }
-      }
-
-      try {
-        const date = new Date(str);
-        return isNaN(date.getTime()) ? null : date;
-      } catch {
-        return null;
-      }
+      return str; // keep as-is (e.g., "29 Desember")
     };
 
     // ===== Get existing NRPs =====
@@ -323,7 +284,7 @@ export async function POST(request) {
             ),
 
             // TTL
-            TTL: normalizeDate(row.TTL || row.ttl || row.KELAHIRAN),
+            TTL: normalizeDateString(row.TTL || row.ttl || row.KELAHIRAN),
             TMT_TNI: normalizeString(
               row.TMT_TNI || row["TMT TNI"] || row.TMTTNI
             ),
@@ -344,10 +305,10 @@ export async function POST(request) {
             NO_SKEP: normalizeString(
               row.NO_SKEP || row["No SKEP"] || row.NOSKEP
             ),
-            TGL_SKEP: normalizeDate(
+            TGL_SKEP: normalizeDateString(
               row.TGL_SKEP || row["TGL Skep"] || row.TGSKEP
             ),
-            TMT_SKEP: normalizeDate(row.TMT_SKEP || row["TMT Skep"]),
+            TMT_SKEP: normalizeDateString(row.TMT_SKEP || row["TMT Skep"]),
             TMT_MULAI: normalizeString(row.TMT_MULAI || row["TMT Mulai"]),
 
             // Data Keluarga dan Penspok
@@ -356,22 +317,30 @@ export async function POST(request) {
             PASANGAN: normalizeString(
               row.PASANGAN || row.ISTRI || row.Istri || row.istri
             ),
-            TTL_PASANGAN: normalizeDate(
+            TTL_PASANGAN: normalizeDateString(
               row.TTL_PASANGAN || row["ttl Istri"] || row["TTL ISTRI"]
             ),
 
             // Data Anak
             ANAK_1: normalizeString(row.ANAK_1 || row["Anak 1"]),
-            TTL_ANAK_1: normalizeDate(row.TTL_ANAK_1 || row.TTL1 || row.TTl1),
+            TTL_ANAK_1: normalizeDateString(
+              row.TTL_ANAK_1 || row.TTL1 || row.TTl1
+            ),
             STS_ANAK_1: normalizeString(row.STS_ANAK_1 || row.STS1 || row.Sts1),
             ANAK_2: normalizeString(row.ANAK_2 || row["Anak 2"]),
-            TTL_ANAK_2: normalizeDate(row.TTL_ANAK_2 || row.TTL2 || row.TTl2),
+            TTL_ANAK_2: normalizeDateString(
+              row.TTL_ANAK_2 || row.TTL2 || row.TTl2
+            ),
             STS_ANAK_2: normalizeString(row.STS_ANAK_2 || row.STS2 || row.Sts2),
             ANAK_3: normalizeString(row.ANAK_3 || row["Anak 3"]),
-            TTL_ANAK_3: normalizeDate(row.TTL_ANAK_3 || row.TTL3 || row.TTl3),
+            TTL_ANAK_3: normalizeDateString(
+              row.TTL_ANAK_3 || row.TTL3 || row.TTl3
+            ),
             STS_ANAK_3: normalizeString(row.STS_ANAK_3 || row.STS3 || row.Sts3),
             ANAK_4: normalizeString(row.ANAK_4 || row["Anak 4"]),
-            TTL_ANAK_4: normalizeDate(row.TTL_ANAK_4 || row.TTL4 || row.TTl4),
+            TTL_ANAK_4: normalizeDateString(
+              row.TTL_ANAK_4 || row.TTL4 || row.TTl4
+            ),
             STS_ANAK_4: normalizeString(row.STS_ANAK_4 || row.STS4 || row.Sts4),
 
             // Data Tunjangan
