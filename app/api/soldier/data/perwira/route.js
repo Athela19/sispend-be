@@ -1,18 +1,27 @@
 /**
  * @swagger
- * /api/soldier/data/pati:
+ * /api/soldier/data/perwira:
  *   get:
  *     tags:
  *       - Soldier
- *     summary: Dapatkan seluruh data personil PATI
- *     description: Mengambil seluruh data personil PATI dari database personil
+ *     summary: Dapatkan seluruh data personil perwira berdasarkan kategori pangkat
+ *     description: Mengambil seluruh data personil perwira (PATI, PAMEN, PAMA) dari database personil dengan filter kategori pangkat
  *     parameters:
  *       - in: query
+ *         name: category
+ *         description: Kategori pangkat (pati, pamen, pama, all)
+ *         schema:
+ *           type: string
+ *           enum: [pati, pamen, pama, all]
+ *         required: false
+ *         example: "pati"
+ *       - in: query
  *         name: pangkat
- *         description: Pangkat personil
+ *         description: Pangkat personil spesifik
  *         schema:
  *           type: string
  *         required: false
+ *         example: "brigjen"
  *       - in: query
  *         name: page
  *         description: Nomor halaman (default 1)
@@ -27,7 +36,7 @@
  *         required: false
  *     responses:
  *       200:
- *         description: Seluruh data personil PATI
+ *         description: Seluruh data personil perwira
  *         content:
  *           application/json:
  *             schema:
@@ -55,34 +64,76 @@
  *                       KESATUAN:
  *                         type: string
  *                         example: "Denmabesad"
- *      500:
+ *                 category:
+ *                   type: string
+ *                   description: Kategori pangkat yang digunakan
+ *                   example: "pati"
+ *       400:
+ *         description: Parameter tidak valid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 error:
+ *                   type: string
+ *                   example: "Kategori pangkat tidak valid"
+ *       500:
  *         description: Terjadi kesalahan server
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
  *                 error:
  *                   type: string
- *                   example: "Terjadi kesalahan server"
+ *                   example: "Internal Server Error"
  */
 
 import prisma from "@/lib/prisma";
 
 const PATI_RANKS = ["brigjen", "mayjen", "letjen", "jenderal"];
+const PAMEN_RANKS = ["mayor", "letkol", "kolonel"];
+const PAMA_RANKS = ["kapten", "lettu", "letda"];
 
-function isPatiRank(rank) {
-  if (!rank) return false;
-  return PATI_RANKS.includes(String(rank).toLowerCase());
+const RANK_CATEGORIES = {
+  pati: PATI_RANKS,
+  pamen: PAMEN_RANKS,
+  pama: PAMA_RANKS,
+  all: [...PATI_RANKS, ...PAMEN_RANKS, ...PAMA_RANKS],
+};
+
+function getRanksByCategory(category) {
+  return RANK_CATEGORIES[category] || [];
 }
 
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
+    const category = searchParams.get("category")?.toLowerCase() || "all";
     const pangkat = searchParams.get("pangkat");
     const page = parseInt(searchParams.get("page")) || 1;
     const limit = parseInt(searchParams.get("limit")) || 50;
     const skip = (page - 1) * limit;
+
+    // Validate category parameter
+    if (!RANK_CATEGORIES.hasOwnProperty(category)) {
+      return Response.json(
+        {
+          status: 400,
+          success: false,
+          error:
+            "Kategori pangkat tidak valid. Gunakan: pati, pamen, pama, atau all",
+        },
+        { status: 400 }
+      );
+    }
 
     const where = {
       AND: [
@@ -92,13 +143,15 @@ export async function GET(request) {
       ],
     };
 
+    // Filter by specific rank if provided
     if (pangkat) {
       where.AND.push({ PANGKAT: { contains: pangkat, mode: "insensitive" } });
     }
 
-    // Filter by PATI ranks
+    // Filter by rank category
+    const selectedRanks = getRanksByCategory(category);
     where.AND.push({
-      OR: PATI_RANKS.map((r) => ({
+      OR: selectedRanks.map((r) => ({
         PANGKAT: { contains: r, mode: "insensitive" },
       })),
     });
@@ -114,13 +167,20 @@ export async function GET(request) {
       status: 200,
       success: true,
       data: list,
+      category: category,
+      total: list.length,
+      page: page,
+      limit: limit,
     });
   } catch (error) {
-    console.error("PATI GET error:", error);
-    return Response.json({
-      status: 500,
-      success: false,
-      error: "Internal Server Error",
-    });
+    console.error("Perwira GET error:", error);
+    return Response.json(
+      {
+        status: 500,
+        success: false,
+        error: "Internal Server Error",
+      },
+      { status: 500 }
+    );
   }
 }
