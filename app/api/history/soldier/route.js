@@ -1,6 +1,6 @@
 /**
  * @swagger
- * /api/history/year:
+ * /api/history/soldier:
  *   get:
  *     tags:
  *       - History
