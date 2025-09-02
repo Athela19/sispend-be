@@ -109,7 +109,7 @@ export async function POST(request) {
 
       const detectDelimiter = (sample) => {
         const first =
-          sample.split(/\r?\n/, 2)[1] || sample.split(/\r?\n/, 1)[0] || ""; // Skip header row for detection
+          sample.split(/\r?\n/, 2)[1] || sample.split(/\r?\n/, 1)[0] || "";
         const semicolons = (first.match(/;/g) || []).length;
         const commas = (first.match(/,/g) || []).length;
         const tabs = (first.match(/\t/g) || []).length;
@@ -136,7 +136,6 @@ export async function POST(request) {
           return value.toString().trim();
         },
       });
-      // Validate that we have data
       if (data.length === 0) {
         throw new Error("No data found in CSV file");
       }
@@ -155,9 +154,9 @@ export async function POST(request) {
       const worksheet = workbook.Sheets[firstSheetName];
 
       const rows = XLSX.utils.sheet_to_json(worksheet, {
-        raw: false,
+        raw: true,
         defval: null,
-        blankrows: false, // Skip blank rows
+        blankrows: false,
       });
 
       rawData = rows
@@ -166,6 +165,14 @@ export async function POST(request) {
           Object.keys(row).forEach((k) => {
             const normalizedKey = normalizeKey(k);
             let value = row[k];
+
+            // Normalisasi NRP biar gak jadi 1.90003E+12 kalo angka besar
+            if (normalizedKey === "nrp" && value != null) {
+              value = value.toString().trim();
+              if (value.includes("E+")) {
+                value = Number.parseFloat(value).toFixed(0);
+              }
+            }
 
             if (
               value === null ||
