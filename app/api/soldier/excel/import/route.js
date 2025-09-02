@@ -136,6 +136,11 @@ export async function POST(request) {
           return value.toString().trim();
         },
       });
+      // Validate that we have data
+      if (data.length === 0) {
+        throw new Error("No data found in CSV file");
+      }
+
       rawData = data;
     }
     // === Enhanced XLSX parsing ===
@@ -241,9 +246,9 @@ export async function POST(request) {
 
       // Try various date formats
       const formats = [
-        /^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})$/,
-        /^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/,
-        /^(\d{1,2})[-\/](\d{1,2})$/,
+        /^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})$/, // DD-MM-YYYY or DD/MM/YYYY
+        /^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/, // YYYY-MM-DD or YYYY/MM/DD
+        /^(\d{1,2})[-\/](\d{1,2})$/, // DD-MM or DD/MM
       ];
 
       for (const format of formats) {
@@ -344,9 +349,7 @@ export async function POST(request) {
             NO_SKEP: normalizeString(
               row.NO_SKEP || row["No SKEP"] || row.NOSKEP
             ),
-            TGL_SKEP: normalizeDate(
-              row.TGL_SKEP || row["TGL Skep"] || row.TGSKEP
-            ),
+            TGL_SKEP: normalizeDate(row.TGL_SKEP || row["TGL Skep"]),
             TMT_SKEP: normalizeDate(row.TMT_SKEP || row["TMT Skep"]),
             TMT_MULAI: normalizeString(row.TMT_MULAI || row["TMT Mulai"]),
 
@@ -431,6 +434,7 @@ export async function POST(request) {
         console.error(`Error inserting chunk ${i / chunkSize + 1}:`, error);
         errors.push(`Chunk ${i / chunkSize + 1}: ${error.message}`);
 
+        // Fallback to individual inserts
         for (const record of chunk) {
           try {
             await prisma.personil.create({ data: record });
@@ -446,18 +450,14 @@ export async function POST(request) {
       }
     }
 
-    // ===== Add to history =====
+    // Add to history
     await prisma.history.create({
       data: {
         userId,
         personilId: null,
         action: `Import ${insertedCount} data personil baru`,
         detail:
-          errors.length > 0
-            ? `Errors: ${errors.slice(0, 5).join("; ")}${
-                errors.length > 5 ? "..." : ""
-              }`
-            : null,
+          errors.length > 0 ? `Errors: ${errors.slice(0, 5).join("; ")}` : null,
       },
     });
 
@@ -468,7 +468,7 @@ export async function POST(request) {
       } dilewati.`,
       importedCount: insertedCount,
       skippedCount: rawData.length - insertedCount,
-      errors: errors.length > 0 ? errors.slice(0, 10) : undefined, // Show first 10 errors
+      errors: errors.length > 0 ? errors.slice(0, 5) : undefined,
     });
   } catch (error) {
     console.error("Import Error:", error);
@@ -487,72 +487,63 @@ export async function POST(request) {
 function normalizeHeader(header) {
   if (!header) return header;
 
-  const cleaned = String(header)
-    .trim()
+  const originalHeader = String(header).trim();
+  const cleaned = originalHeader
     .toUpperCase()
     .replace(/\./g, "")
     .replace(/\s+/g, " ")
     .trim();
 
   const headerMap = {
-    NO: "NO",
-    NAMA: "NAMA",
-    PANGKAT: "PANGKAT",
+    "No.": "NO",
+    Nama: "NAMA",
+    Pangkat: "PANGKAT",
     NRP: "NRP",
     TTL: "TTL",
     KESATUAN: "KESATUAN",
     "TMT TNI": "TMT_TNI",
-    TMTTNI: "TMT_TNI",
     NKTPA: "NKTPA",
     NPWP: "NPWP",
-    AUTENTIK: "AUTENTIK",
+    Autentik: "AUTENTIK",
     MDK: "MDK",
     MKG: "MKG",
     GPT: "GPT",
-    "NO SKEP": "NO_SKEP",
-    NOSKEP: "NO_SKEP",
-    "TGL SKEP": "TGL_SKEP",
-    TGLSKEP: "TGL_SKEP",
-    "TMT SKEP": "TMT_SKEP",
-    "TMT MULAI": "TMT_MULAI",
-    PENSPOK: "PENSPOK",
-    SELAMA: "SELAMA",
-    ISTRI: "PASANGAN",
-    "TTL ISTRI": "TTL_PASANGAN",
-    "ANAK 1": "ANAK_1",
-    TTL1: "TTL_ANAK_1",
-    TTLL1: "TTL_ANAK_1",
-    STS1: "STS_ANAK_1",
-    "ANAK 2": "ANAK_2",
-    TTL2: "TTL_ANAK_2",
-    TTLL2: "TTL_ANAK_2",
-    STS2: "STS_ANAK_2",
-    "ANAK 3": "ANAK_3",
-    TTL3: "TTL_ANAK_3",
-    TTLL3: "TTL_ANAK_3",
-    STS3: "STS_ANAK_3",
-    "ANAK 4": "ANAK_4",
-    TTL4: "TTL_ANAK_4",
-    TTLL4: "TTL_ANAK_4",
-    STS4: "STS_ANAK_4",
-    "PENSPOK WARI": "PENSPOK_WARI",
-    RP1: "RP1",
-    BRP1: "BRP1",
-    RP2: "RP2",
-    BRP2: "BRP2",
+    "No SKEP": "NO_SKEP",
+    "TGL Skep": "TGL_SKEP",
+    "TMT Skep": "TMT_SKEP",
+    "TMT Mulai": "TMT_MULAI",
+    Penspok: "PENSPOK",
+    Selama: "SELAMA",
+    Istri: "PASANGAN",
+    "ttl Istri": "TTL_PASANGAN",
+    "Anak 1": "ANAK_1",
+    TTl1: "TTL_ANAK_1",
+    Sts1: "STS_ANAK_1",
+    "Anak 2": "ANAK_2",
+    TTl2: "TTL_ANAK_2",
+    Sts2: "STS_ANAK_2",
+    "Anak 3": "ANAK_3",
+    TTl3: "TTL_ANAK_3",
+    Sts3: "STS_ANAK_3",
+    "Anak 4": "ANAK_4",
+    TTl4: "TTL_ANAK_4",
+    Sts4: "STS_ANAK_4",
+    "Penspok Wari": "PENSPOK_WARI",
+    Rp1: "RP1",
+    Brp1: "BRP1",
+    Rp2: "RP2",
+    Brp2: "BRP2",
     "TMB/PN": "TMB_PN",
-    ALAMAT: "ALAMAT",
-    "ALAMAT ASABRI": "ALAMAT_ASABRI",
-    UTAMA: "UTAMA",
-    "NO SERI": "NO_SERI",
-    "NO SKEP2": "NO_SKEP2",
-    "TGL SKEP": "TGL_SKEP2",
-    "TGL. SKEP": "TGL_SKEP2", // Handle the dot variation
+    Alamat: "ALAMAT",
+    "Alamat asabri": "ALAMAT_ASABRI",
+    Utama: "UTAMA",
+    "No Seri": "NO_SERI",
+    "No Skep2": "NO_SKEP2",
+    "Tgl. Skep": "TGL_SKEP2",
   };
 
-  if (headerMap[cleaned]) {
-    return headerMap[cleaned];
-  }
+  if (headerMap[originalHeader]) return headerMap[originalHeader];
+  if (headerMap[cleaned]) return headerMap[cleaned];
 
   return cleaned.replace(/[^A-Z0-9_]/g, "_");
 }
