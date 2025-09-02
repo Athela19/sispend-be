@@ -44,7 +44,16 @@ export async function GET() {
       _count: { PANGKAT: true },
     });
 
-    const normalize = (val) => val?.toLowerCase();
+    // Cleanup data yang dapet aja biar bisa dipakek di backend
+    // karena udah males kalo harus bersihin datanya yang udah
+    // di database
+    const normalize = (val) =>
+      val
+        ?.toLowerCase()
+        .replace(/\./g, "") // remove dots
+        .replace(/\s+tni.*$/, "") // drop trailing " tni" and anything after
+        .replace(/\s+/g, " ") // collapse multiple spaces
+        .trim();
 
     const patiRanks = ["brigjen", "mayjen", "letjen", "jenderal"];
     const pamenRanks = ["mayor", "letkol", "kolonel"];
@@ -56,9 +65,15 @@ export async function GET() {
 
     counts.forEach((item) => {
       const rank = normalize(item.PANGKAT);
-      if (patiRanks.includes(rank)) pati += item._count.PANGKAT;
-      else if (pamenRanks.includes(rank)) pamen += item._count.PANGKAT;
-      else if (pamaRanks.includes(rank)) pama += item._count.PANGKAT;
+      if (!rank) return;
+
+      if (patiRanks.some((r) => rank.startsWith(r))) {
+        pati += item._count.PANGKAT;
+      } else if (pamenRanks.some((r) => rank.startsWith(r))) {
+        pamen += item._count.PANGKAT;
+      } else if (pamaRanks.some((r) => rank.startsWith(r))) {
+        pama += item._count.PANGKAT;
+      }
     });
 
     return new Response(JSON.stringify({ pati, pamen, pama }), {
