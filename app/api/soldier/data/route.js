@@ -4,7 +4,7 @@ import prisma from "@/lib/prisma";
  * @swagger
  * /api/soldier/data:
  *   get:
- *     summary: Ambil daftar personil
+ *     summary: Ambil daftar personil dengan filter opsional dan pagination
  *     description: Mengambil data personil dengan filter opsional dan pagination, ini endpoinnya "/api/data/soldier/data?page=1&limit=10&nama=Ferdi&pangkat=Brigjen" nah untuk nrp, nama, pangkat, kesatuan itu opsional
  *     tags:
  *       - Soldier
@@ -48,6 +48,13 @@ import prisma from "@/lib/prisma";
  *           type: string
  *         required: false
  *         description: Cari berdasarkan kesatuan
+ *       - in: query
+ *         name: group
+ *         schema:
+ *           type: string
+ *           enum: [pati, pamen, pama, all]
+ *         required: false
+ *         description: Filter berdasarkan kelompok pangkat (pati, pamen, pama, all)
  *     responses:
  *       200:
  *         description: Data personil berhasil diambil
@@ -109,6 +116,7 @@ export async function GET(req) {
     const nama = searchParams.get("nama")?.trim();
     const pangkat = searchParams.get("pangkat")?.trim();
     const kesatuan = searchParams.get("kesatuan")?.trim();
+    const group = searchParams.get("group")?.trim();
 
     // Build dynamic filter
     const AND = [];
@@ -116,6 +124,60 @@ export async function GET(req) {
     if (nama) AND.push({ NAMA: { contains: nama, mode: "insensitive" } });
     if (pangkat) AND.push({ PANGKAT: { contains: pangkat, mode: "insensitive" } });
     if (kesatuan) AND.push({ KESATUAN: { contains: kesatuan, mode: "insensitive" } });
+
+    // Filter berdasarkan group (pati, pamen, pama)
+    if (group && group !== "all") {
+      let pangkatFilter = [];
+      
+      switch (group.toLowerCase()) {
+        case "pati":
+          // Perwira Tinggi (Brigjen, Mayjen, Letjen, Jenderal)
+          pangkatFilter = [
+            { contains: "Brigjen", mode: "insensitive" },
+            { contains: "Mayjen", mode: "insensitive" },
+            { contains: "Letjen", mode: "insensitive" },
+            { contains: "Jenderal", mode: "insensitive" },
+            { contains: "Laksamana Pertama", mode: "insensitive" },
+            { contains: "Laksamana Muda", mode: "insensitive" },
+            { contains: "Laksamana Madya", mode: "insensitive" },
+            { contains: "Laksamana", mode: "insensitive" },
+            { contains: "Marsma", mode: "insensitive" },
+            { contains: "Marsda", mode: "insensitive" },
+            { contains: "Marsdya", mode: "insensitive" },
+            { contains: "Marshal", mode: "insensitive" }
+          ];
+          break;
+        
+        case "pamen":
+          // Perwira Menengah (Mayor, Letkol, Kolonel)
+          pangkatFilter = [
+            { contains: "Mayor", mode: "insensitive" },
+            { contains: "Letkol", mode: "insensitive" },
+            { contains: "Kolonel", mode: "insensitive" },
+            { contains: "Letnan Kolonel", mode: "insensitive" },
+            { contains: "Komandan", mode: "insensitive" },
+            { contains: "Kapten", mode: "insensitive" }
+          ];
+          break;
+        
+        case "pama":
+          // Perwira Pertama (Letda, Lettu, Kapten)
+          pangkatFilter = [
+            { contains: "Letda", mode: "insensitive" },
+            { contains: "Lettu", mode: "insensitive" },
+            { contains: "Letnan", mode: "insensitive" },
+            { contains: "Kapten", mode: "insensitive" }
+          ];
+          break;
+        
+        default:
+          break;
+      }
+      
+      if (pangkatFilter.length > 0) {
+        AND.push({ OR: pangkatFilter.map(filter => ({ PANGKAT: filter })) });
+      }
+    }
 
     // Hanya gunakan AND jika ada parameter, kalau tidak kosong pakai empty object (ambil semua)
     const whereClause = AND.length > 0 ? { AND } : {};

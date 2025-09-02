@@ -1,9 +1,9 @@
 /**
  * @swagger
- * /api/soldier/history/year:
+ * /api/history/year:
  *   get:
  *     tags:
- *       - Soldier
+ *       - History
  *     summary: Dapatkan jumlah personil berdasarkan tahun TMT_MULAI
  *     description: Menghitung jumlah personil berdasarkan tahun dari field TMT_MULAI
  *     responses:
