@@ -18,6 +18,8 @@ import prisma from "@/lib/prisma";
  *               items:
  *                 type: object
  *                 properties:
+ *                   id:
+ *                     type: integer
  *                   name:
  *                     type: string
  *                   email:
@@ -26,10 +28,12 @@ import prisma from "@/lib/prisma";
  *                     type: string
  *                     enum: [ADMIN, USER]
  *             example:
- *               - name: Dimas Faiz
+ *               - id: 1
+ *                 name: Dimas Faiz
  *                 email: dimasfaiz@gmailcom
  *                 role: ADMIN
- *               - name: Muhammad Syarif
+ *               - id: 2
+ *                 name: Muhammad Syarif
  *                 email: syarif@gmailcom
  *                 role: USER
  *
