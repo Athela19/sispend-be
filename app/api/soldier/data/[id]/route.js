@@ -1,5 +1,3 @@
-import prisma from "@/lib/prisma";
-
 /**
  * @swagger
  * /api/soldier/edit/{id}:
@@ -16,197 +14,14 @@ import prisma from "@/lib/prisma";
  *           type: integer
  *         description: ID personil yang akan diedit
  *         example: 1
+ *     security:
+ *       - BearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               NAMA:
- *                 type: string
- *                 description: Nama lengkap personil
- *                 example: "John Doe"
- *               PANGKAT:
- *                 type: string
- *                 description: Pangkat personil
- *                 example: "Kapten"
- *               NRP:
- *                 type: string
- *                 description: Nomor Registrasi Personil (harus unik)
- *                 example: "123456789"
- *               KESATUAN:
- *                 type: string
- *                 description: Kesatuan/unit personil
- *                 example: "Infanteri"
- *               TTL:
- *                 type: string
- *                 format: date
- *                 description: Tanggal, tempat lahir
- *                 example: "1990-01-01"
- *               TMT_TNI:
- *                 type: string
- *                 description: Terhitung Mulai Tanggal TNI
- *                 example: "2010-01-01"
- *               NKTPA:
- *                 type: string
- *                 description: Nomor Kartu Tanda Penduduk Anggota
- *                 example: "1234567890123456"
- *               NPWP:
- *                 type: string
- *                 description: Nomor Pokok Wajib Pajak
- *                 example: "12.345.678.9-123.000"
- *               AUTENTIK:
- *                 type: string
- *                 description: Kode autentik
- *                 example: "AUTH001"
- *               MDK:
- *                 type: integer
- *                 description: Masa Dinas Kepangkatan
- *                 example: 5
- *               MKG:
- *                 type: integer
- *                 description: Masa Kerja Golongan
- *                 example: 3
- *               GPT:
- *                 type: integer
- *                 description: Golongan Pangkat Terakhir
- *                 example: 4
- *               NO_SKEP:
- *                 type: string
- *                 description: Nomor SKEP
- *                 example: "SKEP-001/2024"
- *               TGL_SKEP:
- *                 type: string
- *                 format: date
- *                 description: Tanggal SKEP
- *                 example: "2024-01-01"
- *               TMT_SKEP:
- *                 type: string
- *                 format: date
- *                 description: Terhitung Mulai Tanggal SKEP
- *                 example: "2024-01-01"
- *               TMT_MULAI:
- *                 type: string
- *                 description: Terhitung Mulai Tanggal Mulai
- *                 example: "2024-01-01"
- *               PENSPOK:
- *                 type: integer
- *                 description: Pensiun Pokok
- *                 example: 5000000
- *               SELAMA:
- *                 type: string
- *                 description: Selama
- *                 example: "Selama"
- *               PASANGAN:
- *                 type: string
- *                 description: Nama pasangan
- *                 example: "Jane Doe"
- *               TTL_PASANGAN:
- *                 type: string
- *                 format: date
- *                 description: Tanggal, tempat lahir pasangan
- *                 example: "1992-01-01"
- *               ANAK_1:
- *                 type: string
- *                 description: Nama anak pertama
- *                 example: "Child 1"
- *               TTL_ANAK_1:
- *                 type: string
- *                 format: date
- *                 description: Tanggal, tempat lahir anak pertama
- *                 example: "2015-01-01"
- *               STS_ANAK_1:
- *                 type: string
- *                 description: Status anak pertama
- *                 example: "Active"
- *               ANAK_2:
- *                 type: string
- *                 description: Nama anak kedua
- *                 example: "Child 2"
- *               TTL_ANAK_2:
- *                 type: string
- *                 format: date
- *                 description: Tanggal, tempat lahir anak kedua
- *                 example: "2017-01-01"
- *               STS_ANAK_2:
- *                 type: string
- *                 description: Status anak kedua
- *                 example: "Active"
- *               ANAK_3:
- *                 type: string
- *                 description: Nama anak ketiga
- *                 example: "Child 3"
- *               TTL_ANAK_3:
- *                 type: string
- *                 format: date
- *                 description: Tanggal, tempat lahir anak ketiga
- *                 example: "2019-01-01"
- *               STS_ANAK_3:
- *                 type: string
- *                 description: Status anak ketiga
- *                 example: "Active"
- *               ANAK_4:
- *                 type: string
- *                 description: Nama anak keempat
- *                 example: "Child 4"
- *               TTL_ANAK_4:
- *                 type: string
- *                 format: date
- *                 description: Tanggal, tempat lahir anak keempat
- *                 example: "2021-01-01"
- *               STS_ANAK_4:
- *                 type: string
- *                 description: Status anak keempat
- *                 example: "Active"
- *               PENSPOK_WARI:
- *                 type: integer
- *                 description: Pensiun Pokok Wari
- *                 example: 6000000
- *               RP1:
- *                 type: integer
- *                 description: RP1
- *                 example: 1000000
- *               BRP1:
- *                 type: integer
- *                 description: BRP1
- *                 example: 2000000
- *               RP2:
- *                 type: integer
- *                 description: RP2
- *                 example: 3000000
- *               BRP2:
- *                 type: integer
- *                 description: BRP2
- *                 example: 4000000
- *               TMB_PN:
- *                 type: string
- *                 description: TMB PN
- *                 example: "TMB001"
- *               ALAMAT:
- *                 type: string
- *                 description: Alamat utama
- *                 example: "Jl. Contoh No. 123, Jakarta"
- *               ALAMAT_ASABRI:
- *                 type: string
- *                 description: Alamat ASABRI
- *                 example: "Jl. ASABRI No. 456, Jakarta"
- *               UTAMA:
- *                 type: string
- *                 description: Utama
- *                 example: "Utama"
- *               NO_SERI:
- *                 type: string
- *                 description: Nomor seri
- *                 example: "SERI001"
- *               NO_SKEP2:
- *                 type: string
- *                 description: Nomor SKEP kedua
- *                 example: "SKEP-002/2024"
- *               TGL_SKEP2:
- *                 type: string
- *                 description: Tanggal SKEP kedua
- *                 example: "2024-02-01"
+ *             $ref: '#/components/schemas/Personil'
  *     responses:
  *       200:
  *         description: Data personil berhasil diupdate
@@ -260,10 +75,77 @@ import prisma from "@/lib/prisma";
  *                   type: string
  *             example:
  *               error: "Internal Server Error"
+ *   delete:
+ *     summary: Hapus data personil
+ *     description: Menghapus data personil berdasarkan ID.
+ *     tags:
+ *       - Soldier
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID personil yang akan dihapus
+ *         example: 1
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Personil berhasil dihapus
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Personil deleted successfully"
+ *       400:
+ *         description: Bad Request
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *             example:
+ *               error: "Invalid personil ID"
+ *       404:
+ *         description: Personil tidak ditemukan
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *             example:
+ *               error: "Personil not found"
+ *       500:
+ *         description: Internal Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *             example:
+ *               error: "Internal Server Error"
  */
+
+import prisma from "@/lib/prisma";
+import { authUser } from "@/middleware/verifyToken";
 
 export async function POST(request, { params }) {
   try {
+    const authCheck = await authUser(request);
+    if (authCheck.status !== 200) {
+      return Response.json(authCheck.body, { status: authCheck.status });
+    }
+
     const { id } = await params;
     const personilId = parseInt(id);
 
@@ -278,7 +160,6 @@ export async function POST(request, { params }) {
       );
     }
 
-    // Check if personil exists
     const existingPersonil = await prisma.personil.findUnique({
       where: { id: personilId },
     });
@@ -294,10 +175,8 @@ export async function POST(request, { params }) {
       );
     }
 
-    // Parse request body
     const body = await request.json();
 
-    // Extract fields from request body (only include fields that are present)
     const updateData = {};
 
     // Personal Information
@@ -407,6 +286,43 @@ export async function POST(request, { params }) {
     );
   } catch (error) {
     console.error("POST Personil Error:", error);
+    return Response.json(
+      { error: error.message || "Internal Server Error" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request, { params }) {
+  try {
+    const authCheck = await authUser(request);
+    if (authCheck.status !== 200) {
+      return Response.json(authCheck.body, { status: authCheck.status });
+    }
+
+    const { id } = await params;
+    const personilId = parseInt(id);
+
+    if (isNaN(personilId)) {
+      return Response.json({ error: "Invalid personil ID" }, { status: 400 });
+    }
+
+    const existingPersonil = await prisma.personil.findUnique({
+      where: { id: personilId },
+    });
+
+    if (!existingPersonil) {
+      return Response.json({ error: "Personil not found" }, { status: 404 });
+    }
+
+    await prisma.personil.delete({ where: { id: personilId } });
+
+    return Response.json(
+      { message: "Personil deleted successfully" },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("DELETE Personil Error:", error);
     return Response.json(
       { error: error.message || "Internal Server Error" },
       { status: 500 }
