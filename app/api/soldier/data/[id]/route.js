@@ -3,7 +3,11 @@
  * /api/soldier/data/{id}:
  *   post:
  *     summary: Edit data personil
- *     description: Mengedit data personil berdasarkan ID. Hanya field yang dikirim yang akan diupdate, field lain tetap tidak berubah.
+ *     description: |
+ *       Mengedit data personil berdasarkan ID. Hanya field yang dikirim yang akan diupdate, field lain tetap tidak berubah.
+ *       **Catatan:**
+ *       - Hanya field yang dikirim yang akan diupdate, field lain tetap tidak berubah.
+ *       - Jika akan mengupdate NRP, harus dipastikan NRP tersebut belum terdata di database
  *     tags:
  *       - Soldier
  *     parameters:
@@ -77,7 +81,10 @@
  *               error: "Internal Server Error"
  *   delete:
  *     summary: Hapus data personil
- *     description: Menghapus data personil berdasarkan ID.
+ *     description: |
+ *       Menghapus data personil berdasarkan ID.
+ *       **Catatan**
+ *       - Tidak ada konfirmasi sebelum menghapus data, lakukan konfirmasi di Frontend sebelum melakukan query ini
  *     tags:
  *       - Soldier
  *     parameters:

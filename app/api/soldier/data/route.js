@@ -104,7 +104,12 @@ import { authUser } from "@/middleware/verifyToken";
  *         description: Terjadi kesalahan server
  *   post:
  *     summary: Tambah data personil baru
- *     description: Menambahkan data personil baru ke database. NRP harus unik.
+ *     description: |
+ *       Menambahkan data personil baru ke database. NRP harus unik.
+ *       **Catatan:**
+ *       - NRP harus unik.
+ *       - Nama harus diisi.
+ *       - TTL harus diisi.
  *     tags:
  *       - Soldier
  *     security:
