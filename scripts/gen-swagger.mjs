@@ -9,8 +9,8 @@ const __dirname = dirname(__filename);
 try {
   // ini spec nya harus di copy paste biar schemas nya
   // bisa dibaca di deployment ngajak ribut dah bikin ribet.
-  return createSwaggerSpec({
-    apiFolder,
+  const spec = createSwaggerSpec({
+    apiFolder: "app/api",
     definition: {
       openapi: "3.0.0",
       info: {
