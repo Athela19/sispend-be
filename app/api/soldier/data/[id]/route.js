@@ -1,6 +1,6 @@
 /**
  * @swagger
- * /api/soldier/edit/{id}:
+ * /api/soldier/data/{id}:
  *   post:
  *     summary: Edit data personil
  *     description: Mengedit data personil berdasarkan ID. Hanya field yang dikirim yang akan diupdate, field lain tetap tidak berubah.
