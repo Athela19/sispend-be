@@ -78,6 +78,7 @@ import { NextResponse } from "next/server";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { authUser } from "@/middleware/verifyToken";
+import { logHistory, ACTION_TYPES } from "@/lib/historyLogger";
 
 export async function POST(request) {
   try {
@@ -457,14 +458,21 @@ export async function POST(request) {
       }
     }
 
-    // Add to history
-    await prisma.history.create({
-      data: {
-        userId,
-        personilId: null,
-        action: `Import ${insertedCount} data personil baru`,
-        detail:
-          errors.length > 0 ? `Errors: ${errors.slice(0, 5).join("; ")}` : null,
+    // Log the import to history using the new system
+    await logHistory({
+      userId,
+      action: ACTION_TYPES.PERSONIL_IMPORTED,
+      detail: `Imported ${insertedCount} data baru dari file: ${file.name}`,
+      requestData: {
+        fileName: file.name,
+        fileType: file.type,
+        totalRecords: rawData.length,
+        skippedRecords: rawData.length - insertedCount,
+      },
+      responseData: {
+        importedCount: insertedCount,
+        skippedCount: rawData.length - insertedCount,
+        errors: errors.length > 0 ? errors.slice(0, 5) : undefined,
       },
     });
 

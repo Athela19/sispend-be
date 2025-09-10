@@ -2,6 +2,7 @@ import prisma from "@/lib/prisma";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { authAdmin } from "@/middleware/verifyToken";
+import { logHistory, ACTION_TYPES } from "@/lib/historyLogger";
 
 /**
  * @swagger
@@ -11,6 +12,14 @@ import { authAdmin } from "@/middleware/verifyToken";
  *     description: Mendaftar user baru dengan nama, email, dan password
  *     tags:
  *       - Users
+ *     parameters:
+ *       - in: header
+ *         name: Authorization
+ *         required: false
+ *         schema:
+ *           type: string
+ *           example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *         description: JWT token required only when registering an admin user
  *     requestBody:
  *       required: true
  *       content:
@@ -152,7 +161,8 @@ export async function POST(request) {
       );
     }
 
-    if (name || email) {
+    // Register admin check, cuma admin yang bisa register admin
+    if (role === "ADMIN") {
       const authCheck = await authAdmin(request);
       if (authCheck.status !== 200) {
         return new Response(
@@ -184,6 +194,48 @@ export async function POST(request) {
       process.env.JWT_SECRET_KEY,
       { expiresIn: "1d" }
     );
+
+    let createdByUserId = null;
+
+    // Kalo user yang dibuat admin, check auth sama log admin yang buat akun
+    if (role === "ADMIN") {
+      const authCheck = await authAdmin(request);
+      if (authCheck.status === 200) {
+        createdByUserId = authCheck.user.id;
+      }
+    }
+
+    // Log pembuatan akun oleh admin
+    if (createdByUserId) {
+      await logHistory({
+        userId: createdByUserId,
+        action: ACTION_TYPES.USER_CREATED,
+        detail: `Membuat akun baru oleh admin: ${name} (${email}) dengan role: ${
+          role || "USER"
+        }`,
+        requestData: { name, email, role: role || "USER" },
+        responseData: {
+          userId: newUser.id,
+          email: newUser.email,
+          role: newUser.role,
+        },
+      });
+    } else {
+      // Log pembuatan akun oleh user (self-registered)
+      await logHistory({
+        userId: newUser.id,
+        action: ACTION_TYPES.USER_CREATED,
+        detail: `Mendaftar akun baru: ${name} (${email}) dengan role: ${
+          role || "USER"
+        }`,
+        requestData: { name, email, role: role || "USER" },
+        responseData: {
+          userId: newUser.id,
+          email: newUser.email,
+          role: newUser.role,
+        },
+      });
+    }
 
     return new Response(
       JSON.stringify({

@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import jwt from "jsonwebtoken";
+import { logHistory, ACTION_TYPES } from "@/lib/historyLogger";
 
 /**
 *  @swagger
@@ -105,6 +106,18 @@ export async function POST(request) {
       JWT_SECRET,
       { expiresIn: "5m" }
     );
+
+    // Log the OTP verification to history
+    await logHistory({
+      userId: user.id,
+      action: ACTION_TYPES.OTP_VERIFIED,
+      detail: `OTP verified successfully for user: ${user.name} (${user.email})`,
+      requestData: { email },
+      responseData: {
+        userId: user.id,
+        tokenExpires: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+      },
+    });
 
     return new Response(
       JSON.stringify({

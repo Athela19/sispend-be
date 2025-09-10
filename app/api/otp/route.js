@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma"; // sesuaikan path prisma client-mu
 import { sendOtpEmail } from "@/lib/sendOTP";
+import { logHistory, ACTION_TYPES } from "@/lib/historyLogger";
 
 function generateOTP(length = 6) {
   const digits = "0123456789";
@@ -101,6 +102,15 @@ export async function POST(request) {
     });
 
     await sendOtpEmail(email, otp);
+
+    // Log the OTP request to history
+    await logHistory({
+      userId: user.id,
+      action: ACTION_TYPES.OTP_REQUESTED,
+      detail: `OTP requested for user: ${user.name} (${user.email})`,
+      requestData: { email },
+      responseData: { otpExpires: otpExpires.toISOString() },
+    });
 
     return new Response(JSON.stringify({ message: "OTP sent to email" }), {
       status: 200,
