@@ -1,6 +1,11 @@
 import prisma from "@/lib/prisma";
 import { authUser, verifyOtpToken } from "@/middleware/verifyToken";
 import bcrypt from "bcrypt";
+import {
+  logHistory,
+  getUserIdFromRequest,
+  ACTION_TYPES,
+} from "@/lib/historyLogger";
 
 /**
  * @swagger
@@ -435,6 +440,17 @@ export async function PUT(request, { params }) {
       updateData.password = await bcrypt.hash(password, 10);
     }
 
+    // Get the original user data for comparison
+    const originalUser = await prisma.users.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+      },
+    });
+
     const updatedUser = await prisma.users.update({
       where: { id: userId },
       data: updateData,
@@ -444,6 +460,36 @@ export async function PUT(request, { params }) {
         email: true,
         role: true,
         createdAt: true,
+      },
+    });
+
+    // Log the user update to history
+    const currentUserId = currentUser.id;
+    const changes = [];
+    if (name && originalUser.name !== name)
+      changes.push(`name: ${originalUser.name} → ${name}`);
+    if (email && originalUser.email !== email)
+      changes.push(`email: ${originalUser.email} → ${email}`);
+    if (role && originalUser.role !== role)
+      changes.push(`role: ${originalUser.role} → ${role}`);
+    if (password) changes.push("password: [UPDATED]");
+
+    await logHistory({
+      userId: currentUserId,
+      action: ACTION_TYPES.USER_UPDATED,
+      detail: `Mengupdate data user ${
+        originalUser.name
+      } (ID: ${userId}): ${changes.join(", ")}`,
+      requestData: {
+        name,
+        email,
+        role,
+        password: password ? "[PROVIDED]" : undefined,
+      },
+      responseData: {
+        userId: updatedUser.id,
+        email: updatedUser.email,
+        role: updatedUser.role,
       },
     });
 
@@ -490,6 +536,12 @@ export async function DELETE(request, { params }) {
 
     const userExists = await prisma.users.findUnique({
       where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+      },
     });
 
     if (!userExists) {
@@ -498,6 +550,16 @@ export async function DELETE(request, { params }) {
 
     await prisma.users.delete({
       where: { id: userId },
+    });
+
+    // Log the user deletion to history
+    const currentUserId = currentUser.id;
+    await logHistory({
+      userId: currentUserId,
+      action: ACTION_TYPES.USER_DELETED,
+      detail: `Menghapus data user: ${userExists.name} (${userExists.email}) dengan role: ${userExists.role}`,
+      requestData: { deletedUserId: userId },
+      responseData: { deletedUser: userExists },
     });
 
     return Response.json(
