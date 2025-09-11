@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import { logHistory, ACTION_TYPES } from "@/lib/historyLogger";
 
 /**
  * @swagger
@@ -127,6 +128,15 @@ export async function POST(request) {
       process.env.JWT_SECRET_KEY,
       { expiresIn: "1d" }
     );
+
+    // Log the login to history
+    await logHistory({
+      userId: user.id,
+      action: ACTION_TYPES.USER_LOGIN,
+      detail: `User logged in: ${user.name} (${user.email})`,
+      requestData: { identifier },
+      responseData: { userId: user.id, role: user.role },
+    });
 
     return new Response(
       JSON.stringify({
