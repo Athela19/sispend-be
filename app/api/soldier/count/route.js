@@ -10,7 +10,7 @@
  *       - `?category=all` → Mengembalikan total semua personil.
  *       - `?category=group` → Mengembalikan jumlah personil per golongan (PATI, PAMEN, PAMA).
  *       - `?category=rank` → Mengembalikan jumlah personil per pangkat (brigjen, mayjen, letjen, mayor, letkol, dsb).
- *       
+ *
  *       **Catatan:**
  *       - Normalisasi pangkat dilakukan dengan menghapus titik, menghilangkan kata "TNI" dan whitespace tambahan.
  *       - Jika `category` tidak diberikan, default-nya adalah `all`.
@@ -95,7 +95,6 @@
  *               details: "Database connection failed"
  */
 
-
 import prisma from "@/lib/prisma";
 
 export async function GET(request) {
@@ -152,10 +151,31 @@ export async function GET(request) {
     }
 
     if (category === "rank") {
+      const allRanks = [
+        "jenderal",
+        "letjen",
+        "mayjen",
+        "brigjen",
+        "kolonel",
+        "letkol",
+        "mayor",
+        "kapten",
+        "lettu",
+        "letda",
+      ];
+
+      // Initialize all ranks with 0 count
       const rankCounts = {};
+      allRanks.forEach((rank) => {
+        rankCounts[rank] = 0;
+      });
+
+      // Update counts based on actual data
       counts.forEach((item) => {
-        const rank = normalize(item.PANGKAT) || "unknown";
-        rankCounts[rank] = item._count.PANGKAT;
+        const rank = normalize(item.PANGKAT);
+        if (rank && allRanks.includes(rank)) {
+          rankCounts[rank] = item._count.PANGKAT;
+        }
       });
 
       return new Response(JSON.stringify(rankCounts), {
@@ -163,15 +183,15 @@ export async function GET(request) {
       });
     }
 
-    return new Response(
-      JSON.stringify({ error: "Kategori tidak dikenali" }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: "Kategori tidak dikenali" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (error) {
     console.error("Error fetching personil counts:", error);
-    return new Response(
-      JSON.stringify({ error: "Internal Server Error" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: "Internal Server Error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }
