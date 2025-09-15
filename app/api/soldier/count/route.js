@@ -12,7 +12,7 @@
  *       - `?category=rank` → Mengembalikan jumlah personil per pangkat (brigjen, mayjen, letjen, mayor, letkol, dsb).
  *
  *       **Catatan:**
- *       - Normalisasi pangkat dilakukan dengan menghapus titik, menghilangkan kata "TNI" dan whitespace tambahan.
+ *       - Pangkat diasumsikan sudah dinormalisasi saat import (huruf kecil, tanpa titik, tanpa "TNI").
  *       - Jika `category` tidak diberikan, default-nya adalah `all`.
  *     parameters:
  *       - in: query
@@ -116,12 +116,7 @@ export async function GET(request) {
     });
 
     const normalize = (val) =>
-      val
-        ?.toLowerCase()
-        .replace(/\./g, "")
-        .replace(/\s+tni.*$/, "")
-        .replace(/\s+/g, " ")
-        .trim();
+      typeof val === "string" ? val.trim().toLowerCase() : null;
 
     if (category === "group") {
       const patiRanks = ["brigjen", "mayjen", "letjen", "jenderal"];

@@ -219,6 +219,17 @@ export async function POST(request) {
       return str;
     };
 
+    const normalizeRank = (val) => {
+      const str = normalizeString(val);
+      if (!str) return null;
+      return str
+        .toLowerCase()
+        .replace(/\./g, "")
+        .replace(/\s+tni.*$/, "")
+        .replace(/\s+/g, " ")
+        .trim();
+    };
+
     const normalizeInt = (val) => {
       if (val === undefined || val === null) return null;
       let str = String(val).trim();
@@ -330,7 +341,7 @@ export async function POST(request) {
             // Core identifiers
             NRP: nrp,
             NAMA: normalizeString(row.NAMA || row.Nama || row.nama),
-            PANGKAT: normalizeString(row.PANGKAT || row.Pangkat || row.pangkat),
+            PANGKAT: normalizeRank(row.PANGKAT || row.Pangkat || row.pangkat),
             KESATUAN: normalizeString(
               row.KESATUAN || row.Kesatuan || row.kesatuan
             ),
@@ -412,7 +423,17 @@ export async function POST(request) {
       })
       .filter((row) => row !== null); // Remove null rows
 
-    const filteredData = mappedData.filter(
+    // Enforce required fields per schema: NRP (already ensured), NAMA, TTL
+    const validData = mappedData.filter((row) => {
+      const hasNama = row.NAMA != null;
+      const hasTtl = row.TTL != null;
+      if (!hasNama || !hasTtl) {
+        return false;
+      }
+      return true;
+    });
+
+    const filteredData = validData.filter(
       (row) => !existingNRPSet.has(row.NRP)
     );
 
