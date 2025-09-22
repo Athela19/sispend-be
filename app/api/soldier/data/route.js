@@ -200,14 +200,6 @@ export async function GET(req) {
             { contains: "Mayjen", mode: "insensitive" },
             { contains: "Letjen", mode: "insensitive" },
             { contains: "Jenderal", mode: "insensitive" },
-            { contains: "Laksamana Pertama", mode: "insensitive" },
-            { contains: "Laksamana Muda", mode: "insensitive" },
-            { contains: "Laksamana Madya", mode: "insensitive" },
-            { contains: "Laksamana", mode: "insensitive" },
-            { contains: "Marsma", mode: "insensitive" },
-            { contains: "Marsda", mode: "insensitive" },
-            { contains: "Marsdya", mode: "insensitive" },
-            { contains: "Marshal", mode: "insensitive" },
           ];
           break;
 
@@ -217,9 +209,6 @@ export async function GET(req) {
             { contains: "Mayor", mode: "insensitive" },
             { contains: "Letkol", mode: "insensitive" },
             { contains: "Kolonel", mode: "insensitive" },
-            { contains: "Letnan Kolonel", mode: "insensitive" },
-            { contains: "Komandan", mode: "insensitive" },
-            { contains: "Kapten", mode: "insensitive" },
           ];
           break;
 
@@ -228,7 +217,6 @@ export async function GET(req) {
           pangkatFilter = [
             { contains: "Letda", mode: "insensitive" },
             { contains: "Lettu", mode: "insensitive" },
-            { contains: "Letnan", mode: "insensitive" },
             { contains: "Kapten", mode: "insensitive" },
           ];
           break;
