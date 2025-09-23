@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "prebuild": "node ./scripts/gen-swagger.mjs",
-    "build": "prisma generate && node ./scripts/gen-swagger.mjs &&next build",
+    "build": "prisma generate && node ./scripts/gen-swagger.mjs && next build",
+    "seed": "prisma generate && prisma db seed",
     "start": "next start",
     "lint": "next lint"
   },
@@ -29,5 +29,8 @@
     "eslint-config-next": "15.4.6",
     "prisma": "^6.13.0",
     "tailwindcss": "^4"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   }
 }
