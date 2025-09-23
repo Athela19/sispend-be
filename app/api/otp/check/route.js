@@ -109,6 +109,7 @@ export async function POST(request) {
     return new Response(
       JSON.stringify({
         message: "OTP valid",
+        userId: user.id,
         otpVerifiedToken: otpVerifiedToken,
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }

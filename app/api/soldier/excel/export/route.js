@@ -45,9 +45,17 @@
 import ExcelJS from "exceljs";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import {
+  logHistory,
+  getUserIdFromRequest,
+  ACTION_TYPES,
+} from "@/lib/historyLogger";
 
-export async function GET() {
+export async function GET(request) {
   try {
+    // Get user ID for history logging
+    const userId = await getUserIdFromRequest(request);
+
     // Ambil semua data dari database
     const data = await prisma.personil.findMany();
 
@@ -149,6 +157,21 @@ export async function GET() {
 
     // Buat buffer XLSX
     const buffer = await workbook.xlsx.writeBuffer();
+
+    // Log the export to history
+    if (userId) {
+      await logHistory({
+        userId,
+        action: ACTION_TYPES.PERSONIL_EXPORTED,
+        detail: `Exported ${data.length} personil records to Excel file`,
+        requestData: { exportType: "all_personil" },
+        responseData: {
+          recordCount: data.length,
+          fileName: "personil.xlsx",
+          fileSize: buffer.length,
+        },
+      });
+    }
 
     return new NextResponse(buffer, {
       status: 200,
