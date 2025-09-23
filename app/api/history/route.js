@@ -107,6 +107,7 @@ export async function POST(request) {
             id: true,
             name: true,
             email: true,
+            role: true,
           },
         },
         personil: {
