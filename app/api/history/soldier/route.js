@@ -4,11 +4,11 @@
  *   get:
  *     tags:
  *       - History
- *     summary: Dapatkan jumlah personil berdasarkan tahun TMT_MULAI
- *     description: Menghitung jumlah personil berdasarkan tahun dari field TMT_MULAI
+ *     summary: Dapatkan distribusi personil per bulan per tahun (berdasarkan TMT_MULAI)
+ *     description: Menghitung agregasi personil per bulan untuk setiap tahun dari field TMT_MULAI.
  *     responses:
  *       200:
- *         description: Jumlah personil berdasarkan tahun THHT
+ *         description: Daftar agregasi bulanan per tahun
  *         content:
  *            application/json:
  *              schema:
@@ -90,7 +90,9 @@ export async function GET() {
       }
     });
 
-    const yearData = Object.values(yearMonthCounts).sort((a, b) => a.year - b.year);
+    const yearData = Object.values(yearMonthCounts).sort(
+      (a, b) => a.year - b.year
+    );
 
     return Response.json({
       success: true,
@@ -100,9 +102,12 @@ export async function GET() {
   } catch (error) {
     console.error("Error fetching year-month data:", error);
     return Response.json(
-      { success: false, message: "Terjadi kesalahan saat mengambil data", error: error.message },
+      {
+        success: false,
+        message: "Terjadi kesalahan saat mengambil data",
+        error: error.message,
+      },
       { status: 500 }
     );
   }
 }
-

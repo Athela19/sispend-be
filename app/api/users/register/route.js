@@ -37,7 +37,7 @@ import { logHistory, ACTION_TYPES } from "@/lib/historyLogger";
  *               password:
  *                 type: string
  *                 example: "passwordrahasia"
- *               Role:
+ *               role:
  *                 type: string
  *                 enum: [ADMIN, USER]
  *                 example: "USER"
