@@ -1,5 +1,4 @@
 import prisma from "@/lib/prisma";
-import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { authAdmin } from "@/middleware/verifyToken";
 import { logHistory, ACTION_TYPES } from "@/lib/historyLogger";
@@ -52,11 +51,8 @@ import { logHistory, ACTION_TYPES } from "@/lib/historyLogger";
  *               properties:
  *                 message:
  *                   type: string
- *                 token:
- *                   type: string
  *             example:
  *               message: User registered successfully
- *               token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
  *       403:
  *         description: Forbidden, hanya admin yang bisa mendaftarkan user
  *         content:
@@ -185,16 +181,6 @@ export async function POST(request) {
       },
     });
 
-    const token = jwt.sign(
-      {
-        id: newUser.id,
-        email: newUser.email,
-        role: newUser.role,
-      },
-      process.env.JWT_SECRET_KEY,
-      { expiresIn: "1d" }
-    );
-
     let createdByUserId = null;
 
     // Kalo user yang dibuat admin, check auth sama log admin yang buat akun
@@ -240,7 +226,6 @@ export async function POST(request) {
     return new Response(
       JSON.stringify({
         message: "User registered successfully",
-        token,
       }),
       {
         status: 201,
