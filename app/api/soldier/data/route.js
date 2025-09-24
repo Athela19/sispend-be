@@ -286,6 +286,9 @@ export async function POST(request) {
         { status: 400 }
       );
     }
+    if (!body.TTL) {
+      return Response.json({ error: "TTL is required" }, { status: 400 });
+    }
 
     // Check if NRP already exists
     const existingNRP = await prisma.personil.findUnique({
@@ -296,13 +299,63 @@ export async function POST(request) {
       return Response.json({ error: "NRP already exists" }, { status: 400 });
     }
 
+    // Load retirement ages from DB config
+    const configs = await prisma.config.findMany({
+      where: { key: { startsWith: "PENSIUN_USIA_" } },
+    });
+    const retirementAges = {
+      pati: 60,
+      pamen: 58,
+      pama: 58,
+      other: 53,
+    };
+    configs.forEach((cfg) => {
+      const group = cfg.key.replace("PENSIUN_USIA_", "").toLowerCase();
+      const num = parseInt(cfg.value, 10);
+      if (Number.isFinite(num)) retirementAges[group] = num;
+    });
+
+    // Helpers
+    const normalizeRank = (val) =>
+      typeof val === "string"
+        ? val
+            .toLowerCase()
+            .replace(/\./g, "")
+            .replace(/\s+tni.*$/, "")
+            .replace(/\s+/g, " ")
+            .trim()
+        : null;
+
+    const computeRetirementDate = (ttlDate, rank) => {
+      if (!ttlDate) return null;
+      const pangkat = normalizeRank(rank);
+      const pati = ["brigjen", "mayjen", "letjen", "jenderal"];
+      const pamen = ["mayor", "letkol", "kolonel"];
+      const pama = ["kapten", "lettu", "letda"];
+      let group = "other";
+      if (pangkat) {
+        if (pati.some((r) => pangkat.startsWith(r))) group = "pati";
+        else if (pamen.some((r) => pangkat.startsWith(r))) group = "pamen";
+        else if (pama.some((r) => pangkat.startsWith(r))) group = "pama";
+      }
+      const umur = retirementAges[group] ?? retirementAges.other;
+      const d = new Date(ttlDate);
+      const pensiun = new Date(
+        d.getFullYear() + umur,
+        d.getMonth(),
+        d.getDate()
+      );
+      return isNaN(pensiun.getTime()) ? null : pensiun;
+    };
+
     // Prepare data for creation
     const createData = {
       NAMA: body.NAMA,
       PANGKAT: body.PANGKAT,
       NRP: body.NRP,
       KESATUAN: body.KESATUAN || null,
-      TTL: body.TTL ? new Date(body.TTL) : null,
+      TTL: new Date(body.TTL),
+      PENSIUN: computeRetirementDate(new Date(body.TTL), body.PANGKAT),
       TMT_TNI: body.TMT_TNI || null,
       NKTPA: body.NKTPA || null,
       NPWP: body.NPWP || null,
