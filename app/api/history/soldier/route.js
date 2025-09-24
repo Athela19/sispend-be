@@ -4,11 +4,11 @@
  *   get:
  *     tags:
  *       - History
- *     summary: Dapatkan jumlah personil berdasarkan tahun TMT_MULAI
- *     description: Menghitung jumlah personil berdasarkan tahun dari field TMT_MULAI
+ *     summary: Dapatkan distribusi pensiun personil per bulan per tahun (berdasarkan PENSIUN)
+ *     description: Menghitung agregasi personil yang akan pensiun per bulan untuk setiap tahun dari field PENSIUN.
  *     responses:
  *       200:
- *         description: Jumlah personil berdasarkan tahun THHT
+ *         description: Daftar agregasi pensiun bulanan per tahun
  *         content:
  *            application/json:
  *              schema:
@@ -23,7 +23,31 @@
  *                      properties:
  *                        year:
  *                          type: integer
- *                        count:
+ *                        label:
+ *                          type: string
+ *                        januari:
+ *                          type: integer
+ *                        februari:
+ *                          type: integer
+ *                        maret:
+ *                          type: integer
+ *                        april:
+ *                          type: integer
+ *                        mei:
+ *                          type: integer
+ *                        juni:
+ *                          type: integer
+ *                        juli:
+ *                          type: integer
+ *                        agustus:
+ *                          type: integer
+ *                        september:
+ *                          type: integer
+ *                        oktober:
+ *                          type: integer
+ *                        november:
+ *                          type: integer
+ *                        desember:
  *                          type: integer
  *                  total:
  *                    type: integer
@@ -45,27 +69,47 @@
  */
 
 import prisma from "@/lib/prisma";
-import { extractBulanTahun } from "@/lib/dateParser";
+
+// Helper function to extract month/year from Date object
+function extractMonthYearFromDate(date) {
+  if (!date) return { bulan: null, tahun: null };
+
+  const monthNames = [
+    "januari",
+    "februari",
+    "maret",
+    "april",
+    "mei",
+    "juni",
+    "juli",
+    "agustus",
+    "september",
+    "oktober",
+    "november",
+    "desember",
+  ];
+
+  const d = new Date(date);
+  const bulan = monthNames[d.getMonth()];
+  const tahun = d.getFullYear();
+
+  return { bulan, tahun };
+}
 
 export async function GET() {
   try {
-    const allPersonil = await prisma.Personil.findMany({
+    const allPersonil = await prisma.personil.findMany({
       select: {
         id: true,
         NAMA: true,
-        TMT_MULAI: true,
-      },
-      where: {
-        TMT_MULAI: {
-          not: null,
-        },
+        PENSIUN: true,
       },
     });
 
     const yearMonthCounts = {};
 
     allPersonil.forEach((personil) => {
-      const { bulan, tahun } = extractBulanTahun(personil.TMT_MULAI);
+      const { bulan, tahun } = extractMonthYearFromDate(personil.PENSIUN);
 
       if (tahun !== null && bulan !== null) {
         if (!yearMonthCounts[tahun]) {
@@ -90,19 +134,27 @@ export async function GET() {
       }
     });
 
-    const yearData = Object.values(yearMonthCounts).sort((a, b) => a.year - b.year);
+    const yearData = Object.values(yearMonthCounts).sort(
+      (a, b) => a.year - b.year
+    );
+
+    const total = allPersonil.length;
 
     return Response.json({
       success: true,
       data: yearData,
-      message: "Data berhasil diambil",
+      total,
+      message: "Data distribusi pensiun berhasil diambil",
     });
   } catch (error) {
-    console.error("Error fetching year-month data:", error);
+    console.error("Error fetching retirement distribution data:", error);
     return Response.json(
-      { success: false, message: "Terjadi kesalahan saat mengambil data", error: error.message },
+      {
+        success: false,
+        message: "Terjadi kesalahan saat mengambil data distribusi pensiun",
+        error: error.message,
+      },
       { status: 500 }
     );
   }
 }
-

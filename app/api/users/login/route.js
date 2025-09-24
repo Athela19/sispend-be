@@ -14,7 +14,7 @@ import { logHistory, ACTION_TYPES } from "@/lib/historyLogger";
  *        Masuk menggunakan user yang telah terdaftar
  *
  *        **Catatan Penting**
- *        - Identifier bisa menggunakan username maupun password
+ *        - Identifier bisa menggunakan email maupun username
  *     requestBody:
  *       required: true
  *       content:
