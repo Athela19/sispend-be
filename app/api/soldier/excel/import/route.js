@@ -313,6 +313,63 @@ export async function POST(request) {
       }
     };
 
+    // Load retirement ages from DB config once per request
+    const loadRetirementAges = async () => {
+      const configs = await prisma.config.findMany({
+        where: { key: { startsWith: "PENSIUN_USIA_" } },
+      });
+      const ages = {
+        pati: 60,
+        pamen: 58,
+        pama: 58,
+        other: 53,
+      };
+      configs.forEach((cfg) => {
+        const group = cfg.key.replace("PENSIUN_USIA_", "").toLowerCase();
+        const num = parseInt(cfg.value, 10);
+        if (Number.isFinite(num)) ages[group] = num;
+      });
+      return ages;
+    };
+
+    const retirementAges = await loadRetirementAges();
+
+    const computeRetirementDate = (ttlDate, rank) => {
+      if (!ttlDate) return null;
+
+      const normalize = (val) => {
+        if (!val) return null;
+        return String(val)
+          .toLowerCase()
+          .replace(/\./g, "")
+          .replace(/\s+tni.*$/, "")
+          .replace(/\s+/g, " ")
+          .trim();
+      };
+
+      const pangkat = normalize(rank);
+
+      const pati = ["brigjen", "mayjen", "letjen", "jenderal"];
+      const pamen = ["mayor", "letkol", "kolonel"];
+      const pama = ["kapten", "lettu", "letda"];
+
+      let group = "other";
+      if (pangkat) {
+        if (pati.some((r) => pangkat.startsWith(r))) group = "pati";
+        else if (pamen.some((r) => pangkat.startsWith(r))) group = "pamen";
+        else if (pama.some((r) => pangkat.startsWith(r))) group = "pama";
+      }
+
+      const umur = retirementAges[group] ?? retirementAges.other;
+      const d = new Date(ttlDate);
+      const pensiun = new Date(
+        d.getFullYear() + umur,
+        d.getMonth(),
+        d.getDate()
+      );
+      return isNaN(pensiun.getTime()) ? null : pensiun;
+    };
+
     // ===== Get existing NRPs =====
     const existingNRPs = await prisma.personil.findMany({
       select: { NRP: true },
@@ -371,6 +428,10 @@ export async function POST(request) {
             TGL_SKEP: normalizeDate(row.TGL_SKEP || row["TGL Skep"]),
             TMT_SKEP: normalizeDate(row.TMT_SKEP || row["TMT Skep"]),
             TMT_MULAI: normalizeString(row.TMT_MULAI || row["TMT Mulai"]),
+            PENSIUN: computeRetirementDate(
+              normalizeDate(row.TTL || row.ttl || row.KELAHIRAN),
+              normalizeRank(row.PANGKAT || row.Pangkat || row.pangkat)
+            ),
 
             // Data Keluarga dan Penspok
             PENSPOK: normalizeInt(row.PENSPOK || row.Penspok || row.penspok),
