@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { authAdmin } from "@/middleware/verifyToken";
 /**
  * @swagger
  * /api/history:
@@ -131,3 +132,4 @@ export async function POST(request) {
     );
   }
 }
+
