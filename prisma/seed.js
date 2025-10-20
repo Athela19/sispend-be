@@ -8,8 +8,6 @@ const prisma = new PrismaClient();
 async function main() {
   const defaults = [
     { key: "PENSIUN_USIA_PATI", value: "60" },
-    { key: "PENSIUN_USIA_PAMEN", value: "58" },
-    { key: "PENSIUN_USIA_PAMA", value: "58" },
     { key: "PENSIUN_USIA_OTHER", value: "53" },
   ];
 

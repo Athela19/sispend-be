@@ -282,7 +282,7 @@ export async function POST(request, { params }) {
       const configs = await prisma.config.findMany({
         where: { key: { startsWith: "PENSIUN_USIA_" } },
       });
-      const retirementAges = { pati: 60, pamen: 58, pama: 58, other: 53 };
+      const retirementAges = { pati: 60, other: 53 };
       configs.forEach((cfg) => {
         const group = cfg.key.replace("PENSIUN_USIA_", "").toLowerCase();
         const num = parseInt(cfg.value, 10);
@@ -303,13 +303,9 @@ export async function POST(request, { params }) {
         if (!ttlDate) return null;
         const pangkat = normalizeRank(rank);
         const pati = ["brigjen", "mayjen", "letjen", "jenderal"];
-        const pamen = ["mayor", "letkol", "kolonel"];
-        const pama = ["kapten", "lettu", "letda"];
         let group = "other";
         if (pangkat) {
           if (pati.some((r) => pangkat.startsWith(r))) group = "pati";
-          else if (pamen.some((r) => pangkat.startsWith(r))) group = "pamen";
-          else if (pama.some((r) => pangkat.startsWith(r))) group = "pama";
         }
         const umur = retirementAges[group] ?? retirementAges.other;
         const d = new Date(ttlDate);

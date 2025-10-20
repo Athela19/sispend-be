@@ -5,7 +5,7 @@
  *     tags:
  *       - Admin
  *     summary: Ambil konfigurasi usia pensiun
- *     description: Mengembalikan usia pensiun saat ini per kelompok pangkat (pati, pamen, pama, other). Hanya untuk admin.
+ *     description: Mengembalikan usia pensiun saat ini per kelompok pangkat (pati, other). Hanya untuk admin.
  *     security:
  *       - BearerAuth: []
  *     responses:
@@ -22,12 +22,6 @@
  *                     pati:
  *                       type: integer
  *                       example: 60
- *                     pamen:
- *                       type: integer
- *                       example: 58
- *                     pama:
- *                       type: integer
- *                       example: 58
  *                     other:
  *                       type: integer
  *                       example: 53
@@ -63,12 +57,6 @@
  *                   pati:
  *                     type: integer
  *                     minimum: 1
- *                   pamen:
- *                     type: integer
- *                     minimum: 1
- *                   pama:
- *                     type: integer
- *                     minimum: 1
  *                   other:
  *                     type: integer
  *                     minimum: 1
@@ -78,8 +66,6 @@
  *               value:
  *                 retirementAges:
  *                   pati: 60
- *                   pamen: 58
- *                   pama: 58
  *                   other: 53
  *     responses:
  *       200:
