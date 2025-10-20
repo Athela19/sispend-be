@@ -8,6 +8,16 @@
  *     description: Menerima file CSV/XLSX via multipart/form-data dan menambahkan data personil yang belum ada berdasarkan NRP.
  *     security:
  *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: errorLimit
+ *         schema:
+ *           oneOf:
+ *             - type: string
+ *               enum: [all]
+ *             - type: integer
+ *         required: false
+ *         description: Jumlah baris skipped yang dikembalikan. Gunakan angka atau 'all'.
  *     requestBody:
  *       required: true
  *       content:
@@ -35,6 +45,31 @@
  *                   type: integer
  *                 skippedCount:
  *                   type: integer
+ *                 skippedRows:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       rowNumber:
+ *                         type: integer
+ *                         description: Nomor baris yang dilewati
+ *                       reason:
+ *                         type: string
+ *                         description: Alasan mengapa baris dilewati
+ *                       details:
+ *                         type: string
+ *                         description: Detail tambahan tentang error
+ *                       data:
+ *                         type: object
+ *                         description: Data dari baris yang dilewati
+ *                 totalSkippedRows:
+ *                   type: integer
+ *                   description: Total jumlah baris yang dilewati
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   description: Error saat insert ke database (jika ada)
  *       400:
  *         description: File tidak ditemukan/format tidak didukung/empty
  *         content:
@@ -88,6 +123,17 @@ export async function POST(request) {
       return NextResponse.json(authCheck.body, { status: authCheck.status });
     }
     const userId = authCheck.user.id;
+
+    // ===== Query param to control returned error details =====
+    const url = new URL(request.url);
+    const errorLimitParam = url.searchParams.get("errorLimit");
+    const MAX_ERROR_ROWS = 5000; // safety cap
+    const errorLimit =
+      errorLimitParam === "all"
+        ? Infinity
+        : Number.isFinite(parseInt(errorLimitParam || "", 10))
+        ? Math.max(0, parseInt(errorLimitParam, 10))
+        : 10; // default
 
     // ===== Ambil file =====
     const formData = await request.formData();
@@ -380,7 +426,8 @@ export async function POST(request) {
         .filter((nrp) => Boolean(nrp))
     );
 
-    // ===== Enhanced Data Mapping =====
+    // =====  Data Mapping w/ Error Tracking =====
+    const skippedRows = [];
     const mappedData = rawData
       .map((row, index) => {
         try {
@@ -388,13 +435,16 @@ export async function POST(request) {
 
           const nrp = normalizeString(nrpValue);
           if (!nrp) {
-            console.warn(
-              `Row ${index + 1}: Invalid or missing NRP: ${nrpValue}`
-            );
+            skippedRows.push({
+              rowNumber: index + 1,
+              reason: "NRP tidak valid atau kosong",
+              details: `NRP yang diberikan: "${nrpValue}"`,
+              data: { NRP: nrpValue, NAMA: row.NAMA || row.Nama || row.nama },
+            });
             return null; // Skip this row
           }
 
-          return {
+          const mappedRow = {
             // Core identifiers
             NRP: nrp,
             NAMA: normalizeString(row.NAMA || row.Nama || row.nama),
@@ -477,8 +527,18 @@ export async function POST(request) {
             NO_SKEP2: normalizeString(row.NO_SKEP2 || row["No Skep2"]),
             TGL_SKEP2: normalizeString(row.TGL_SKEP2 || row["Tgl. Skep"]),
           };
+
+          return mappedRow;
         } catch (error) {
-          console.warn(`Error processing row ${index + 1}:`, error);
+          skippedRows.push({
+            rowNumber: index + 1,
+            reason: "Error saat memproses data",
+            details: error.message,
+            data: {
+              NRP: row.NRP || row.nrp,
+              NAMA: row.NAMA || row.Nama || row.nama,
+            },
+          });
           return null;
         }
       })
@@ -488,22 +548,56 @@ export async function POST(request) {
     const validData = mappedData.filter((row) => {
       const hasNama = row.NAMA != null;
       const hasTtl = row.TTL != null;
-      if (!hasNama || !hasTtl) {
+
+      if (!hasNama) {
+        skippedRows.push({
+          rowNumber: rawData.findIndex((r) => (r.NRP || r.nrp) === row.NRP) + 1,
+          reason: "NAMA tidak boleh kosong",
+          details: "Field NAMA wajib diisi",
+          data: { NRP: row.NRP, NAMA: row.NAMA },
+        });
+        return false;
+      }
+
+      if (!hasTtl) {
+        skippedRows.push({
+          rowNumber: rawData.findIndex((r) => (r.NRP || r.nrp) === row.NRP) + 1,
+          reason: "TTL (Tanggal Lahir) tidak boleh kosong",
+          details: "Field TTL wajib diisi dengan format tanggal yang valid",
+          data: { NRP: row.NRP, NAMA: row.NAMA, TTL: row.TTL },
+        });
+        return false;
+      }
+
+      return true;
+    });
+
+    const filteredData = validData.filter((row) => {
+      if (existingNRPSet.has(row.NRP)) {
+        skippedRows.push({
+          rowNumber: rawData.findIndex((r) => (r.NRP || r.nrp) === row.NRP) + 1,
+          reason: "NRP sudah ada dalam database",
+          details: `NRP ${row.NRP} sudah terdaftar dalam sistem`,
+          data: { NRP: row.NRP, NAMA: row.NAMA },
+        });
         return false;
       }
       return true;
     });
 
-    const filteredData = validData.filter(
-      (row) => !existingNRPSet.has(row.NRP)
-    );
-
     if (filteredData.length === 0) {
+      const limitedSkippedRows =
+        errorLimit === Infinity
+          ? skippedRows.slice(0, MAX_ERROR_ROWS)
+          : skippedRows.slice(0, errorLimit);
       return NextResponse.json({
         success: true,
         message: "Tidak ada data baru untuk diimpor (semua NRP sudah ada)",
         importedCount: 0,
-        skippedCount: mappedData.length,
+        skippedCount: rawData.length,
+        skippedRows: limitedSkippedRows,
+        skippedRowsReturned: limitedSkippedRows.length,
+        totalSkippedRows: skippedRows.length,
       });
     }
 
@@ -558,6 +652,10 @@ export async function POST(request) {
       },
     });
 
+    const limitedSkippedRows =
+      errorLimit === Infinity
+        ? skippedRows.slice(0, MAX_ERROR_ROWS)
+        : skippedRows.slice(0, errorLimit);
     return NextResponse.json({
       success: true,
       message: `Data berhasil diimpor. ${insertedCount} record berhasil, ${
@@ -565,6 +663,9 @@ export async function POST(request) {
       } dilewati.`,
       importedCount: insertedCount,
       skippedCount: rawData.length - insertedCount,
+      skippedRows: limitedSkippedRows,
+      skippedRowsReturned: limitedSkippedRows.length,
+      totalSkippedRows: skippedRows.length,
       errors: errors.length > 0 ? errors.slice(0, 5) : undefined,
     });
   } catch (error) {
