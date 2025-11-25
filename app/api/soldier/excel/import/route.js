@@ -484,6 +484,18 @@ export async function POST(request) {
       })
       .filter((row) => row !== null); // Remove null rows
 
+    // Calculate status_bup for each record
+    const { checkBupStatus } = await import("@/lib/bupHelper");
+    for (const record of mappedData) {
+      if (record.TTL && record.PANGKAT) {
+        const status_bup = await checkBupStatus({
+          TTL: record.TTL,
+          PANGKAT: record.PANGKAT,
+        });
+        record.status_bup = status_bup;
+      }
+    }
+
     // Enforce required fields per schema: NRP (already ensured), NAMA, TTL
     const validData = mappedData.filter((row) => {
       const hasNama = row.NAMA != null;

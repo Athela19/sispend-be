@@ -1,6 +1,35 @@
 /**
  * @swagger
  * /api/soldier/data/{id}:
+ *   get:
+ *     summary: Ambil detail data personil
+ *     description: Mengambil data lengkap personil berdasarkan ID
+ *     tags:
+ *       - Soldier
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID personil
+ *         example: 1
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Data personil ditemukan
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   $ref: '#/components/schemas/Personil'
+ *       404:
+ *         description: Data tidak ditemukan
+ *       500:
+ *         description: Terjadi kesalahan server
  *   post:
  *     summary: Edit data personil
  *     description: |
@@ -145,6 +174,38 @@
 
 import prisma from "@/lib/prisma";
 import { authUser } from "@/middleware/verifyToken";
+
+export async function GET(request, { params }) {
+  try {
+    const authCheck = await authUser(request);
+    if (authCheck.status !== 200) {
+      return Response.json(authCheck.body, { status: authCheck.status });
+    }
+
+    const { id } = await params;
+    const personilId = parseInt(id);
+
+    if (isNaN(personilId)) {
+      return Response.json({ error: "Invalid personil ID" }, { status: 400 });
+    }
+
+    const personil = await prisma.personil.findUnique({
+      where: { id: personilId },
+    });
+
+    if (!personil) {
+      return Response.json({ error: "Personil not found" }, { status: 404 });
+    }
+
+    return Response.json({ data: personil }, { status: 200 });
+  } catch (error) {
+    console.error("GET Personil Error:", error);
+    return Response.json(
+      { error: error.message || "Internal Server Error" },
+      { status: 500 }
+    );
+  }
+}
 
 export async function POST(request, { params }) {
   try {
