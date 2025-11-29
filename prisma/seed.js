@@ -7,8 +7,9 @@ const prisma = new PrismaClient();
 
 async function main() {
   const defaults = [
-    { key: "PENSIUN_USIA_PATI", value: "60" },
-    { key: "PENSIUN_USIA_OTHER", value: "53" },
+    { key: "BUP_BRIGJEN", value: "60" },
+    { key: "BUP_MAYJEN", value: "61" },
+    { key: "BUP_LETJEN", value: "62" },
   ];
 
   const configCount = await prisma.config.count();

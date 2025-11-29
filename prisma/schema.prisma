@@ -78,6 +78,7 @@ model Personil {
   NO_SERI       String?
   NO_SKEP2      String?
   TGL_SKEP2     String?
+  status_bup    String?
   histories     History[]
   createdAt     DateTime  @default(now())
 }
