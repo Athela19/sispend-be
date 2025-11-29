@@ -6,7 +6,8 @@ import { authUser } from "@/middleware/verifyToken";
  * /api/soldier/data:
  *   get:
  *     summary: Ambil daftar personil dengan filter opsional dan pagination
- *     description: Mengambil data personil dengan filter opsional dan pagination. Contoh: "/api/soldier/data?page=1&limit=10&nama=Ferdi&pangkat=Brigjen". Parameter nrp, nama, pangkat, kesatuan bersifat opsional.
+ *     description: |
+ *       Mengambil data personil dengan filter opsional dan pagination. Contoh: "/api/soldier/data?page=1&limit=10&nama=Ferdi&pangkat=Brigjen". Parameter nrp, nama, pangkat, kesatuan bersifat opsional.
  *     tags:
  *       - Soldier
  *     parameters:
