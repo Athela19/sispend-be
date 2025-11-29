@@ -8,7 +8,7 @@
  *     description: |
  *       Mengembalikan jumlah personil berdasarkan kategori yang dipilih melalui query parameter `category`.
  *       - `?category=all` → Mengembalikan total semua personil.
- *       - `?category=group` → Mengembalikan jumlah personil per golongan (PATI, PAMEN, PAMA).
+ *       - `?category=group` → Mengembalikan jumlah personil per golongan (PATI).
  *       - `?category=rank` → Mengembalikan jumlah personil per pangkat (brigjen, mayjen, letjen, mayor, letkol, dsb).
  *
  *       **Catatan:**
@@ -43,16 +43,8 @@
  *                     pati:
  *                       type: integer
  *                       description: Jumlah personil golongan PATI
- *                     pamen:
- *                       type: integer
- *                       description: Jumlah personil golongan PAMEN
- *                     pama:
- *                       type: integer
- *                       description: Jumlah personil golongan PAMA
  *                   example:
  *                     pati: 10
- *                     pamen: 40
- *                     pama: 20
  *                 # Response untuk ?category=rank
  *                 - type: object
  *                   additionalProperties:
@@ -120,12 +112,8 @@ export async function GET(request) {
 
     if (category === "group") {
       const patiRanks = ["brigjen", "mayjen", "letjen", "jenderal"];
-      const pamenRanks = ["mayor", "letkol", "kolonel"];
-      const pamaRanks = ["kapten", "lettu", "letda"];
 
-      let pati = 0,
-        pamen = 0,
-        pama = 0;
+      let pati = 0;
 
       counts.forEach((item) => {
         const rank = normalize(item.PANGKAT);
@@ -133,14 +121,10 @@ export async function GET(request) {
 
         if (patiRanks.some((r) => rank.startsWith(r))) {
           pati += item._count.PANGKAT;
-        } else if (pamenRanks.some((r) => rank.startsWith(r))) {
-          pamen += item._count.PANGKAT;
-        } else if (pamaRanks.some((r) => rank.startsWith(r))) {
-          pama += item._count.PANGKAT;
         }
       });
 
-      return new Response(JSON.stringify({ pati, pamen, pama }), {
+      return new Response(JSON.stringify({ pati }), {
         headers: { "Content-Type": "application/json" },
       });
     }
