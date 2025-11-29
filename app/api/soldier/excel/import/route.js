@@ -366,8 +366,6 @@ export async function POST(request) {
       });
       const ages = {
         pati: 60,
-        pamen: 58,
-        pama: 58,
         other: 53,
       };
       configs.forEach((cfg) => {
@@ -396,14 +394,10 @@ export async function POST(request) {
       const pangkat = normalize(rank);
 
       const pati = ["brigjen", "mayjen", "letjen", "jenderal"];
-      const pamen = ["mayor", "letkol", "kolonel"];
-      const pama = ["kapten", "lettu", "letda"];
 
       let group = "other";
       if (pangkat) {
         if (pati.some((r) => pangkat.startsWith(r))) group = "pati";
-        else if (pamen.some((r) => pangkat.startsWith(r))) group = "pamen";
-        else if (pama.some((r) => pangkat.startsWith(r))) group = "pama";
       }
 
       const umur = retirementAges[group] ?? retirementAges.other;

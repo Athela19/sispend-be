@@ -53,9 +53,9 @@ import { authUser } from "@/middleware/verifyToken";
  *         name: group
  *         schema:
  *           type: string
- *           enum: [pati, pamen, pama, all]
+ *           enum: [pati, all]
  *         required: false
- *         description: Filter berdasarkan kelompok pangkat (pati, pamen, pama, all)
+ *         description: Filter berdasarkan kelompok pangkat (pati, all)
  *     responses:
  *       200:
  *         description: Data personil berhasil diambil
@@ -188,7 +188,7 @@ export async function GET(req) {
     if (kesatuan)
       AND.push({ KESATUAN: { contains: kesatuan, mode: "insensitive" } });
 
-    // Filter berdasarkan group (pati, pamen, pama)
+    // Filter berdasarkan group (pati)
     if (group && group !== "all") {
       let pangkatFilter = [];
 
@@ -200,24 +200,6 @@ export async function GET(req) {
             { contains: "Mayjen", mode: "insensitive" },
             { contains: "Letjen", mode: "insensitive" },
             { contains: "Jenderal", mode: "insensitive" },
-          ];
-          break;
-
-        case "pamen":
-          // Perwira Menengah (Mayor, Letkol, Kolonel)
-          pangkatFilter = [
-            { contains: "Mayor", mode: "insensitive" },
-            { contains: "Letkol", mode: "insensitive" },
-            { contains: "Kolonel", mode: "insensitive" },
-          ];
-          break;
-
-        case "pama":
-          // Perwira Pertama (Letda, Lettu, Kapten)
-          pangkatFilter = [
-            { contains: "Letda", mode: "insensitive" },
-            { contains: "Lettu", mode: "insensitive" },
-            { contains: "Kapten", mode: "insensitive" },
           ];
           break;
 
@@ -305,8 +287,6 @@ export async function POST(request) {
     });
     const retirementAges = {
       pati: 60,
-      pamen: 58,
-      pama: 58,
       other: 53,
     };
     configs.forEach((cfg) => {
@@ -330,13 +310,9 @@ export async function POST(request) {
       if (!ttlDate) return null;
       const pangkat = normalizeRank(rank);
       const pati = ["brigjen", "mayjen", "letjen", "jenderal"];
-      const pamen = ["mayor", "letkol", "kolonel"];
-      const pama = ["kapten", "lettu", "letda"];
       let group = "other";
       if (pangkat) {
         if (pati.some((r) => pangkat.startsWith(r))) group = "pati";
-        else if (pamen.some((r) => pangkat.startsWith(r))) group = "pamen";
-        else if (pama.some((r) => pangkat.startsWith(r))) group = "pama";
       }
       const umur = retirementAges[group] ?? retirementAges.other;
       const d = new Date(ttlDate);
