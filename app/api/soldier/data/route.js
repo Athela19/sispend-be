@@ -397,6 +397,14 @@ export async function POST(request) {
       TGL_SKEP2: body.TGL_SKEP2 || null,
     };
 
+    // Calculate status_bup using rank-specific BUP
+    const { checkBupStatus } = await import("@/lib/bupHelper");
+    const status_bup = await checkBupStatus({
+      TTL: createData.TTL,
+      PANGKAT: createData.PANGKAT,
+    });
+    createData.status_bup = status_bup;
+
     // Create new personil
     const newPersonil = await prisma.personil.create({
       data: createData,
