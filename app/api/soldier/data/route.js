@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { authUser } from "@/middleware/verifyToken";
+import { calculateRetirementDate, checkBupStatus } from "@/lib/bupHelper";
 
 /**
  * @swagger
@@ -282,49 +283,6 @@ export async function POST(request) {
       return Response.json({ error: "NRP already exists" }, { status: 400 });
     }
 
-    // Load retirement ages from DB config
-    const configs = await prisma.config.findMany({
-      where: { key: { startsWith: "PENSIUN_USIA_" } },
-    });
-    const retirementAges = {
-      pati: 60,
-      other: 53,
-    };
-    configs.forEach((cfg) => {
-      const group = cfg.key.replace("PENSIUN_USIA_", "").toLowerCase();
-      const num = parseInt(cfg.value, 10);
-      if (Number.isFinite(num)) retirementAges[group] = num;
-    });
-
-    // Helpers
-    const normalizeRank = (val) =>
-      typeof val === "string"
-        ? val
-            .toLowerCase()
-            .replace(/\./g, "")
-            .replace(/\s+tni.*$/, "")
-            .replace(/\s+/g, " ")
-            .trim()
-        : null;
-
-    const computeRetirementDate = (ttlDate, rank) => {
-      if (!ttlDate) return null;
-      const pangkat = normalizeRank(rank);
-      const pati = ["brigjen", "mayjen", "letjen", "jenderal"];
-      let group = "other";
-      if (pangkat) {
-        if (pati.some((r) => pangkat.startsWith(r))) group = "pati";
-      }
-      const umur = retirementAges[group] ?? retirementAges.other;
-      const d = new Date(ttlDate);
-      const pensiun = new Date(
-        d.getFullYear() + umur,
-        d.getMonth(),
-        d.getDate()
-      );
-      return isNaN(pensiun.getTime()) ? null : pensiun;
-    };
-
     // Prepare data for creation
     const createData = {
       NAMA: body.NAMA,
@@ -332,7 +290,7 @@ export async function POST(request) {
       NRP: body.NRP,
       KESATUAN: body.KESATUAN || null,
       TTL: new Date(body.TTL),
-      PENSIUN: computeRetirementDate(new Date(body.TTL), body.PANGKAT),
+      PENSIUN: await calculateRetirementDate(new Date(body.TTL), body.PANGKAT),
       TMT_TNI: body.TMT_TNI || null,
       NKTPA: body.NKTPA || null,
       NPWP: body.NPWP || null,
@@ -375,7 +333,6 @@ export async function POST(request) {
     };
 
     // Calculate status_bup using rank-specific BUP
-    const { checkBupStatus } = await import("@/lib/bupHelper");
     const status_bup = await checkBupStatus({
       TTL: createData.TTL,
       PANGKAT: createData.PANGKAT,
