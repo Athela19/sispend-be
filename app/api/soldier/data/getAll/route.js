@@ -55,9 +55,9 @@ import prisma from "@/lib/prisma";
  *                         example: "Kodam III"
  *                       status_bup:
  *                         type: string
- *                         description: Status BUP (Batas Usia Prajurit) - "Pensiun" jika sudah mencapai BUP, "Aktif" jika belum
- *                         example: "Aktif"
- *                         enum: [Pensiun, Aktif, Unknown]
+ *                         description: Status BUP (Batas Usia Prajurit)
+ *                         example: "belum bup"
+ *                         enum: [mencapai bup, belum bup, akan bup, Unknown]
  *                 total:
  *                   type: integer
  *                   example: 120
