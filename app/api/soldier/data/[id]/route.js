@@ -174,6 +174,7 @@
 
 import prisma from "@/lib/prisma";
 import { authUser } from "@/middleware/verifyToken";
+import { calculateRetirementDate } from "@/lib/bupHelper";
 
 export async function GET(request, { params }) {
   try {
@@ -339,50 +340,11 @@ export async function POST(request, { params }) {
 
     // Recompute PENSIUN when TTL or PANGKAT changes
     if (body.TTL !== undefined || body.PANGKAT !== undefined) {
-      // Load retirement ages from Config
-      const configs = await prisma.config.findMany({
-        where: { key: { startsWith: "PENSIUN_USIA_" } },
-      });
-      const retirementAges = { pati: 60, other: 53 };
-      configs.forEach((cfg) => {
-        const group = cfg.key.replace("PENSIUN_USIA_", "").toLowerCase();
-        const num = parseInt(cfg.value, 10);
-        if (Number.isFinite(num)) retirementAges[group] = num;
-      });
-
-      const normalizeRank = (val) =>
-        typeof val === "string"
-          ? val
-              .toLowerCase()
-              .replace(/\./g, "")
-              .replace(/\s+tni.*$/, "")
-              .replace(/\s+/g, " ")
-              .trim()
-          : null;
-
-      const computeRetirementDate = (ttlDate, rank) => {
-        if (!ttlDate) return null;
-        const pangkat = normalizeRank(rank);
-        const pati = ["brigjen", "mayjen", "letjen", "jenderal"];
-        let group = "other";
-        if (pangkat) {
-          if (pati.some((r) => pangkat.startsWith(r))) group = "pati";
-        }
-        const umur = retirementAges[group] ?? retirementAges.other;
-        const d = new Date(ttlDate);
-        const pensiun = new Date(
-          d.getFullYear() + umur,
-          d.getMonth(),
-          d.getDate()
-        );
-        return isNaN(pensiun.getTime()) ? null : pensiun;
-      };
-
       const effectiveTTL =
         body.TTL !== undefined ? new Date(body.TTL) : existingPersonil.TTL;
       const effectivePangkat =
         body.PANGKAT !== undefined ? body.PANGKAT : existingPersonil.PANGKAT;
-      updateData.PENSIUN = computeRetirementDate(
+      updateData.PENSIUN = await calculateRetirementDate(
         effectiveTTL,
         effectivePangkat
       );
