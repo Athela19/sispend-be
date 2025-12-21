@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { authUser } from "@/middleware/verifyToken";
 import { calculateRetirementDate, checkBupStatus } from "@/lib/bupHelper";
+import { hitungPensiun } from "@/lib/hitungPensiun";
 
 /**
  * @swagger
@@ -169,19 +170,14 @@ import { calculateRetirementDate, checkBupStatus } from "@/lib/bupHelper";
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
-
     const page = parseInt(searchParams.get("page")) || 1;
     const limit = parseInt(searchParams.get("limit")) || 50;
     const skip = (page - 1) * limit;
-
-    // Ambil query params opsional
     const nrp = searchParams.get("nrp")?.trim();
     const nama = searchParams.get("nama")?.trim();
     const pangkat = searchParams.get("pangkat")?.trim();
     const kesatuan = searchParams.get("kesatuan")?.trim();
     const group = searchParams.get("group")?.trim();
-
-    // Build dynamic filter
     const AND = [];
     if (nrp) AND.push({ NRP: { contains: nrp, mode: "insensitive" } });
     if (nama) AND.push({ NAMA: { contains: nama, mode: "insensitive" } });
@@ -189,14 +185,11 @@ export async function GET(req) {
       AND.push({ PANGKAT: { contains: pangkat, mode: "insensitive" } });
     if (kesatuan)
       AND.push({ KESATUAN: { contains: kesatuan, mode: "insensitive" } });
-
-    // Filter berdasarkan group (pati)
     if (group && group !== "all") {
       let pangkatFilter = [];
 
       switch (group.toLowerCase()) {
         case "pati":
-          // Perwira Tinggi (Brigjen, Mayjen, Letjen, Jenderal)
           pangkatFilter = [
             { contains: "Brigjen", mode: "insensitive" },
             { contains: "Mayjen", mode: "insensitive" },
@@ -214,13 +207,10 @@ export async function GET(req) {
       }
     }
 
-    // Hanya gunakan AND jika ada parameter, kalau tidak kosong pakai empty object (ambil semua)
     const whereClause = AND.length > 0 ? { AND } : {};
 
-    // Hitung total
     const total = await prisma.personil.count({ where: whereClause });
 
-    // Ambil data
     const personil = await prisma.personil.findMany({
       where: whereClause,
       skip,
@@ -263,7 +253,6 @@ export async function POST(request) {
 
     const body = await request.json();
 
-    // Validate required fields
     if (!body.NAMA || !body.NRP || !body.PANGKAT) {
       return Response.json(
         { error: "NAMA, NRP, and PANGKAT are required" },
@@ -331,8 +320,28 @@ export async function POST(request) {
       NO_SKEP2: body.NO_SKEP2 || null,
       TGL_SKEP2: body.TGL_SKEP2 || null,
     };
+    if (
+      createData.GPT &&
+      createData.MDK &&
+      createData.TMT_TNI &&
+      createData.PENSIUN
+    ) {
+      const hasilPensiun = hitungPensiun({
+        GPT: createData.GPT,
+        MDK: createData.MDK,
+        TMT_TNI: createData.TMT_TNI ,
+        PENSIUN: createData.PENSIUN,
+        PASANGAN: createData.PASANGAN,
+        STS_ANAK_1: createData.STS_ANAK_1,
+        STS_ANAK_2: createData.STS_ANAK_2,
+        STS_ANAK_3: createData.STS_ANAK_3,
+        STS_ANAK_4: createData.STS_ANAK_4,
+      });
 
-    // Calculate status_bup using rank-specific BUP
+      createData.PENSPOK = hasilPensiun.PENSPOK;
+      createData.RP1 = hasilPensiun.RP1;
+      createData.RP2 = hasilPensiun.RP2;
+    }
     const status_bup = await checkBupStatus({
       TTL: createData.TTL,
       PANGKAT: createData.PANGKAT,

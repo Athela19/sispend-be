@@ -115,6 +115,7 @@ import * as XLSX from "xlsx";
 import { authUser } from "@/middleware/verifyToken";
 import { logHistory, ACTION_TYPES } from "@/lib/historyLogger";
 import { calculateRetirementDate, checkBupStatus } from "@/lib/bupHelper";
+import { hitungPensiun } from "@/lib/hitungPensiun";
 
 export async function POST(request) {
   try {
@@ -490,16 +491,51 @@ export async function POST(request) {
       .filter((row) => row !== null); // Remove null rows
 
     // Calculate PENSIUN and status_bup for each record
+    // Calculate PENSIUN, status_bup, dan PENSPOK
     for (const record of mappedData) {
       if (record.TTL && record.PANGKAT) {
         record.PENSIUN = await computeRetirementDate(
           record.TTL,
           record.PANGKAT
         );
+
         record.status_bup = await checkBupStatus({
           TTL: record.TTL,
           PANGKAT: record.PANGKAT,
         });
+      }
+
+      // === HITUNG PENSIUN (PENSPOK & TUNJANGAN) ===
+      if (record.GPT && record.MDK && record.TMT_TNI && record.PENSIUN) {
+        try {
+          const hasilPensiun = hitungPensiun({
+            GPT: record.GPT,
+            MDK: record.MDK,
+            TMT_TNI: record.TMT_TNI,
+            PENSIUN: record.PENSIUN,
+            PASANGAN: record.PASANGAN,
+            STS_ANAK_1: record.STS_ANAK_1,
+            STS_ANAK_2: record.STS_ANAK_2,
+            STS_ANAK_3: record.STS_ANAK_3,
+            STS_ANAK_4: record.STS_ANAK_4,
+          });
+
+          record.PENSPOK = hasilPensiun.PENSPOK;
+          record.RP1 = hasilPensiun.RP1 ?? record.RP1;
+          record.RP2 = hasilPensiun.RP2 ?? record.RP2;
+        } catch (e) {
+          skippedRows.push({
+            rowNumber:
+              rawData.findIndex((r) => (r.NRP || r.nrp) === record.NRP) + 1,
+            reason: "Gagal menghitung pensiun",
+            details: e.message,
+            data: {
+              NRP: record.NRP,
+              GPT: record.GPT,
+              MDK: record.MDK,
+            },
+          });
+        }
       }
     }
 
