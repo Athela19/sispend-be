@@ -177,6 +177,7 @@ import { authUser } from "@/middleware/verifyToken";
 import { calculateRetirementDate } from "@/lib/bupHelper";
 import { calculateUsiaTahunLabel } from "@/lib/usiaHelper";
 import { checkBupStatus } from "@/lib/bupHelper";
+import { calculateJumlahAnak } from "@/lib/anakHelper";
 
 export async function GET(request, { params }) {
   try {
@@ -202,6 +203,7 @@ export async function GET(request, { params }) {
 
     const status_bup = await checkBupStatus(personil);
     const usia = calculateUsiaTahunLabel(personil.TTL);
+    const jml_anak = calculateJumlahAnak(personil);
 
     return Response.json(
       {
@@ -209,6 +211,7 @@ export async function GET(request, { params }) {
         ...personil,
         usia,
         status_bup,
+        jml_anak,
       },
     }, 
     { status: 200 });
