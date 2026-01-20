@@ -1,4 +1,6 @@
+import { checkBupStatus } from "@/lib/bupHelper";
 import prisma from "@/lib/prisma";
+import { calculateUsiaTahunLabel } from "@/lib/usiaHelper";
 
 /**
  * @swagger
@@ -70,7 +72,6 @@ import prisma from "@/lib/prisma";
  *       500:
  *         description: Terjadi kesalahan server
  */
-
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -87,9 +88,22 @@ export async function GET(request) {
       prisma.personil.count(),
     ]);
 
+    const data = await Promise.all(
+      personil.map(async (p) => {
+        const usia = calculateUsiaTahunLabel(p.TTL);
+        const status_bup = await checkBupStatus(p);
+
+        return {
+          ...p,
+          usia,
+          status_bup,
+        };
+      })
+    );
+
     return new Response(
       JSON.stringify({
-        data: personil,
+        data,
         total,
         page,
         totalPages: Math.ceil(total / limit),
