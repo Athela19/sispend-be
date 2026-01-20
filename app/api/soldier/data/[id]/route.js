@@ -175,6 +175,8 @@
 import prisma from "@/lib/prisma";
 import { authUser } from "@/middleware/verifyToken";
 import { calculateRetirementDate } from "@/lib/bupHelper";
+import { calculateUsiaTahunLabel } from "@/lib/usiaHelper";
+import { checkBupStatus } from "@/lib/bupHelper";
 
 export async function GET(request, { params }) {
   try {
@@ -198,7 +200,18 @@ export async function GET(request, { params }) {
       return Response.json({ error: "Personil not found" }, { status: 404 });
     }
 
-    return Response.json({ data: personil }, { status: 200 });
+    const status_bup = await checkBupStatus(personil);
+    const usia = calculateUsiaTahunLabel(personil.TTL);
+
+    return Response.json(
+      {
+      data: {
+        ...personil,
+        usia,
+        status_bup,
+      },
+    }, 
+    { status: 200 });
   } catch (error) {
     console.error("GET Personil Error:", error);
     return Response.json(
