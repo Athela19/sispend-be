@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { authUser } from "@/middleware/verifyToken";
 import { calculateRetirementDate, checkBupStatus } from "@/lib/bupHelper";
+import { calculateUsiaTahunLabel } from "@/lib/usiaHelper";
 
 /**
  * @swagger
@@ -165,7 +166,6 @@ import { calculateRetirementDate, checkBupStatus } from "@/lib/bupHelper";
  *             example:
  *               error: "Internal Server Error"
  */
-
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
@@ -196,7 +196,6 @@ export async function GET(req) {
 
       switch (group.toLowerCase()) {
         case "pati":
-          // Perwira Tinggi (Brigjen, Mayjen, Letjen, Jenderal)
           pangkatFilter = [
             { contains: "Brigjen", mode: "insensitive" },
             { contains: "Mayjen", mode: "insensitive" },
@@ -204,29 +203,29 @@ export async function GET(req) {
             { contains: "Jenderal", mode: "insensitive" },
           ];
           break;
-
         default:
           break;
       }
 
       if (pangkatFilter.length > 0) {
-        AND.push({ OR: pangkatFilter.map((filter) => ({ PANGKAT: filter })) });
+        AND.push({
+          OR: pangkatFilter.map((filter) => ({ PANGKAT: filter })),
+        });
       }
     }
 
-    // Hanya gunakan AND jika ada parameter, kalau tidak kosong pakai empty object (ambil semua)
     const whereClause = AND.length > 0 ? { AND } : {};
 
-    // Hitung total
-    const total = await prisma.personil.count({ where: whereClause });
-
-    // Ambil data
-    const personil = await prisma.personil.findMany({
-      where: whereClause,
-      skip,
-      take: limit,
-      orderBy: { NAMA: "asc" },
-    });
+    // Ambil data + total (parallel)
+    const [personil, total] = await Promise.all([
+      prisma.personil.findMany({
+        where: whereClause,
+        skip,
+        take: limit,
+        orderBy: { NAMA: "asc" },
+      }),
+      prisma.personil.count({ where: whereClause }),
+    ]);
 
     if (total === 0 || personil.length === 0) {
       return new Response(JSON.stringify({ message: "Data tidak ditemukan" }), {
@@ -235,9 +234,22 @@ export async function GET(req) {
       });
     }
 
+    const data = await Promise.all(
+      personil.map(async (p) => {
+        const usia = calculateUsiaTahunLabel(p.TTL);
+        const status_bup = await checkBupStatus(p);
+
+        return {
+          ...p,
+          usia,
+          status_bup,
+        };
+      })
+    );
+
     return new Response(
       JSON.stringify({
-        data: personil,
+        data,
         page,
         limit,
         total,
